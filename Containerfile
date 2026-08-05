@@ -6,7 +6,7 @@ FROM quay.io/fedora/fedora-bootc:44 AS base
 ENV INTERACTIVE=0
 
 # ==============================================================================
-# ESTÁGIO 2: Instalação dos Pacotes do Sistema Base
+# ESTÁGIO 2: Instalação dos Pacotes e Firmwares
 # ==============================================================================
 
 # 1. Plugin do COPR e repositórios comunitários (Niri e Ghostty)
@@ -14,8 +14,10 @@ RUN dnf install -y 'dnf5-command(copr)' && \
     dnf copr enable -y yalter/niri && \
     dnf copr enable -y scottames/ghostty
 
-# 2. Drivers de Vídeo e Recursos de Hardware (AMD/Intel)
+# 2. Firmwares de Hardware e Drivers de Vídeo/Áudio (Lunar Lake - Intel Ultra 7)
 RUN dnf install -y \
+    linux-firmware \
+    alsa-sof-firmware \
     mesa-dri-drivers \
     mesa-vulkan-drivers \
     libva \
@@ -89,7 +91,7 @@ RUN dnf install -y \
 RUN dnf clean all && rm -rf /var/cache/dnf/*
 
 # ==============================================================================
-# ESTÁGIO 3: Copiando Arquivos Locais e Habilitando Serviços
+# ESTÁGIO 3: Configurações, Serviços e OSTree Commit
 # ==============================================================================
 
 COPY system_files/ /
@@ -102,3 +104,6 @@ RUN systemctl enable NetworkManager.service && \
     systemctl enable bootc-fetch-apply-updates.service
 
 ENV OSTREE_CONTAINER_OPTION_TRANSIENT_ETC=true
+
+# Sela a camada OCI para compatibilidade nativa com o motor de boot do OSTree
+RUN ostree container commit
