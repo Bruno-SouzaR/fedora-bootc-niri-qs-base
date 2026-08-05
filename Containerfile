@@ -9,20 +9,17 @@ ENV INTERACTIVE=0
 # ESTÁGIO 2: Instalação dos Pacotes do Sistema Base
 # ==============================================================================
 
-# 1. Instalar o plugin do COPR para o DNF5 e habilitar repositórios necessários
+# 1. Instalar o plugin do COPR para o DNF5 e habilitar Niri e Ghostty
 RUN dnf install -y 'dnf5-command(copr)' && \
     dnf copr enable -y yalter/niri && \
-    dnf copr enable -y scottames/ghostty && \
-    dnf copr enable -y fedora-bootc/bootc-sub-projects || true
+    dnf copr enable -y scottames/ghostty
 
-# 2. Drivers de Vídeo (AMD/Intel) e Recursos Extras de Hardware
-# Nota: 'kernel' e 'kernel-modules' foram removidos pois já vêm na imagem base do bootc
+# 2. Drivers de Vídeo e Recursos de Hardware (AMD/Intel - Lunar Lake / Arc)
+# Nota: 'linux-firmware' foi removido pois já vem nativo na imagem base do bootc
 RUN dnf install -y \
-    linux-firmware \
     mesa-dri-drivers \
     mesa-vulkan-drivers \
     libva \
-    intel-media-driver \
     mesa-va-drivers \
     NetworkManager-wifi \
     bluez-tools
@@ -81,7 +78,7 @@ RUN dnf install -y \
     curl \
     wget
 
-# 7. Motores de Extensão (Contêineres e Sandbox)
+# 7. Motores de Extensionamento (Contêineres e Sandbox)
 RUN dnf install -y \
     podman \
     crun \
@@ -89,7 +86,7 @@ RUN dnf install -y \
     distrobox \
     flatpak
 
-# Limpeza de cache para otimizar o tamanho final da imagem
+# Limpeza do cache do DNF5 para otimizar o tamanho final da camada OCI
 RUN dnf clean all && rm -rf /var/cache/dnf/*
 
 # ==============================================================================
