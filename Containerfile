@@ -1,7 +1,7 @@
 # ==============================================================================
-# ESTÁGIO 1: Imagem Base OCI (Fedora bootc)
+# ESTÁGIO 1: Imagem Base OCI Estável (Fedora bootc 44)
 # ==============================================================================
-FROM quay.io/fedora/fedora-bootc:latest AS base
+FROM quay.io/fedora/fedora-bootc:44 AS base
 
 ENV INTERACTIVE=0
 
@@ -9,12 +9,12 @@ ENV INTERACTIVE=0
 # ESTÁGIO 2: Instalação dos Pacotes do Sistema Base
 # ==============================================================================
 
-# 1. Instalar o plugin do COPR para o DNF5 e habilitar Niri e Ghostty
+# 1. Plugin do COPR e repositórios comunitários (Niri e Ghostty)
 RUN dnf install -y 'dnf5-command(copr)' && \
     dnf copr enable -y yalter/niri && \
     dnf copr enable -y scottames/ghostty
 
-# 2. Drivers de Vídeo e Recursos de Hardware (AMD/Intel)
+# 2. Drivers de Vídeo e Recursos de Hardware (AMD/Intel Lunar Lake)
 RUN dnf install -y \
     mesa-dri-drivers \
     mesa-vulkan-drivers \
@@ -77,7 +77,7 @@ RUN dnf install -y \
     curl \
     wget
 
-# 7. Motores de Extensionamento (Contêineres e Sandbox)
+# 7. Motores de Contêiner e Sandbox
 RUN dnf install -y \
     podman \
     crun \
@@ -85,20 +85,23 @@ RUN dnf install -y \
     distrobox \
     flatpak
 
-# Limpeza do cache do DNF5
+# Limpeza de cache do DNF5
 RUN dnf clean all && rm -rf /var/cache/dnf/*
 
 # ==============================================================================
-# ESTÁGIO 3: Copiando Arquivos Locais e Habilitando Serviços
+# ESTÁGIO 3: Configurações, Initramfs e Serviços
 # ==============================================================================
 
 COPY system_files/ /
 
+# Regenera o initramfs garantindo o carregamento dos módulos do Kernel 7.x do Fedora 44
+RUN dracut --regenerate-all --force
+
+# Ativação de Serviços do Systemd
 RUN systemctl enable NetworkManager.service && \
     systemctl enable bluetooth.service && \
     systemctl enable greetd.service && \
     systemctl enable podman.socket && \
     systemctl enable bootc-fetch-apply-updates.service
 
-# Configuração de persistência de estado do bootc
 ENV OSTREE_CONTAINER_OPTION_TRANSIENT_ETC=true
