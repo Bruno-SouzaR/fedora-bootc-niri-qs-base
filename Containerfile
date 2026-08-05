@@ -14,8 +14,7 @@ RUN dnf install -y 'dnf5-command(copr)' && \
     dnf copr enable -y yalter/niri && \
     dnf copr enable -y scottames/ghostty
 
-# 2. Drivers de Vídeo e Recursos de Hardware (AMD/Intel - Lunar Lake / Arc)
-# Nota: 'linux-firmware' foi removido pois já vem nativo na imagem base do bootc
+# 2. Drivers de Vídeo e Recursos de Hardware (AMD/Intel)
 RUN dnf install -y \
     mesa-dri-drivers \
     mesa-vulkan-drivers \
@@ -24,7 +23,7 @@ RUN dnf install -y \
     NetworkManager-wifi \
     bluez-tools
 
-# 3. Gerenciador de Login, Compositor e Shell
+# 3. Gerenciador de Login, Compositor e Shell (Ajustado: qt6-qtshadertools)
 RUN dnf install -y \
     greetd \
     niri \
@@ -32,13 +31,13 @@ RUN dnf install -y \
     quickshell \
     qt6-qtdeclarative \
     qt6-qtwayland \
-    qt6-shadertools \
+    qt6-qtshadertools \
     xdg-desktop-portal \
     xdg-desktop-portal-gnome \
     gnome-keyring \
     polkit-kde-agent-1
 
-# 4. Servidor de Áudio e Utilitários de Hardware (Notebook/Desktop)
+# 4. Servidor de Áudio e Utilitários de Hardware
 RUN dnf install -y \
     pipewire \
     wireplumber \
@@ -86,7 +85,7 @@ RUN dnf install -y \
     distrobox \
     flatpak
 
-# Limpeza do cache do DNF5 para otimizar o tamanho final da camada OCI
+# Limpeza do cache do DNF5
 RUN dnf clean all && rm -rf /var/cache/dnf/*
 
 # ==============================================================================
