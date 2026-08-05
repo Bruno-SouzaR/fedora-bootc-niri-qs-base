@@ -14,7 +14,7 @@ RUN dnf install -y 'dnf5-command(copr)' && \
     dnf copr enable -y yalter/niri && \
     dnf copr enable -y scottames/ghostty
 
-# 2. Firmwares de Hardware e Drivers de Vídeo/Áudio (Lunar Lake - Intel Ultra 7)
+# 2. Firmwares de Hardware e Drivers de Vídeo/Áudio (Intel Lunar Lake)
 RUN dnf install -y \
     linux-firmware \
     alsa-sof-firmware \
@@ -91,12 +91,18 @@ RUN dnf install -y \
 RUN dnf clean all && rm -rf /var/cache/dnf/*
 
 # ==============================================================================
-# ESTÁGIO 3: Configurações, Serviços e OSTree Commit
+# ESTÁGIO 3: Configurações, Criar Usuários, Serviços e OSTree Commit
 # ==============================================================================
 
 COPY system_files/ /
 
-# Ativação de Serviços do Systemd
+# 1. Cria o usuário do sistema 'greeter' exigido pelo greetd
+RUN useradd -r -M -d /var/lib/greetd -s /sbin/nologin -G video,input greeter || true
+
+# 2. Mascara o serviço que falhava ao tentar remontar a raiz OCI
+RUN systemctl mask systemd-remount-fs.service
+
+# 3. Ativação dos Serviços do Systemd
 RUN systemctl enable NetworkManager.service && \
     systemctl enable bluetooth.service && \
     systemctl enable greetd.service && \
