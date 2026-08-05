@@ -1,0 +1,9 @@
+[default_session]
+# O greetd inicia o Niri em modo headless/greeter para rodar o Quickshell/qylock
+command = "niri --kdl-file /etc/niri/greetd-niri.kdl"
+user = "greeter"
+
+[initial_session]
+# Se você quiser auto-login direto na sua sessão de usuário (Opcional):
+# command = "niri"
+# user = "seu-usuario"
