@@ -1,0 +1,9 @@
+// system_files/etc/niri/greetd-niri.kdl
+// Inicializa o Quickshell no boot para o greetd
+spawn-at-startup "quickshell" "-p" "/etc/quickshell/material-you/main.qml"
+
+// Caso queira forçar qualquer janela gráfica normal que o Quickshell abra a ocupar a tela inteira:
+window-rule {
+    match app-id="quickshell"
+    open-fullscreen true
+}
