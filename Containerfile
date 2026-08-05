@@ -14,7 +14,7 @@ RUN dnf copr enable -y yalter/niri && \
     dnf copr enable -y scottames/ghostty && \
     dnf copr enable -y fedora-bootc/bootc-sub-projects || true
 
-# 2. Hardware e Display (AMD/Intel)
+# 2. Hardware e Display (Mesa / Drivers AMD e Intel)
 RUN dnf install -y \
     kernel \
     kernel-modules \
@@ -45,7 +45,7 @@ RUN dnf install -y \
     gnome-keyring \
     polkit-kde-agent-1
 
-# 4. Servidor de Áudio e Utilitários de Hardware
+# 4. Servidor de Áudio e Utilitários de Hardware (Notebook/Desktop)
 RUN dnf install -y \
     pipewire \
     wireplumber \
@@ -93,18 +93,22 @@ RUN dnf install -y \
     distrobox \
     flatpak
 
+# Limpeza de cache para manter a camada da imagem leve
 RUN dnf clean all && rm -rf /var/cache/dnf/*
 
 # ==============================================================================
-# ESTÁGIO 3: Copiando Configurações do Sistema e Serviços
+# ESTÁGIO 3: Copiando Arquivos Locais e Habilitando Serviços
 # ==============================================================================
 
+# Copia toda a árvore de arquivos de configuração do seu repositório local para a raiz / do sistema
 COPY system_files/ /
 
+# Ativação de Serviços do Systemd
 RUN systemctl enable NetworkManager.service && \
     systemctl enable bluetooth.service && \
     systemctl enable greetd.service && \
     systemctl enable podman.socket && \
     systemctl enable bootc-fetch-apply-updates.service
 
+# Configuração de persistência de estado do bootc
 OSTREE_CONTAINER_OPTION_TRANSIENT_ETC=true
