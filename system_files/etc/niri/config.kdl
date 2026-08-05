@@ -1,0 +1,142 @@
+// ------------------------------------------------------------------
+// CONFIGURAÇÃO PERSONALIZADA - NIRI + NOCTALIA
+// ------------------------------------------------------------------
+
+// Monitor Secundário (Fica em cima, portanto y = 0)
+output "DP-1" {
+    mode "1920x1080@144.000" // Ajuste para a sua resolução/HZ real
+    position x=0 y=0
+}
+
+// Tela do Notebook (Fica embaixo, logo o Y é a altura do monitor de cima)
+output "eDP-1" {
+    mode "2880x1800@120.000" // Ajuste para a sua resolução/HZ real
+    position x=0 y=1080
+}
+
+// 1. Variáveis de Ambiente Globais
+environment {
+    BROWSER "flatpak run app.zen_browser.zen"
+    TERMINAL "ghostty"
+    EDITOR "codium"
+}
+
+// 2. Inicialização Automática de Serviços
+spawn-at-startup "xwayland-satellite"
+
+// Inicializa a sua Top Bar em Quickshell no boot do Niri
+spawn-at-startup "quickshell" "-p" "/etc/quickshell/topbar/shell.qml"
+
+// 3. Configurações de Entrada (Mouse, Teclado br e Touchpad)
+input {
+    mouse {
+        accel-speed -0.5
+        scroll-method "on-button-down"
+        scroll-button 274
+    }
+
+    // Foco Acompanha o Mouse
+    focus-follows-mouse max-scroll-amount="10%"
+
+    // Layout Teclado Americano Internacional
+    keyboard {
+        xkb {
+            layout "br"
+        }
+    }
+
+    touchpad {
+        tap
+        natural-scroll
+    }
+}
+
+// 4. Layout e Espaçamentos
+layout {
+    gaps 4
+    center-focused-column "never"
+    default-column-width { proportion 0.5; }
+
+    // Bordas de Foco
+    focus-ring {
+        width 4
+        active-color "rgba(34, 126, 142, 0.75)"        
+        inactive-color "#798bb2ff"
+    }
+}
+
+// --- REGRAS DE JANELAS E OPACIDADE ---
+// Janelas em segundo plano (inativas) ficam com 88% de opacidade para o blur aparecer
+window-rule {
+    geometry-corner-radius 14
+    clip-to-geometry true
+    opacity 0.88
+}
+
+// Janela em foco (ativa) fica 100% opaca para melhor leitura
+window-rule {
+    match is-active=true
+    opacity 1.0
+}
+
+// --- REGRAS DE CAMADAS (Barra Superior e Widgets) ---
+layer-rule {
+    background-effect {
+        blur true
+        xray false
+    }
+}
+
+// --- CONFIGURAÇÃO DO MOTOR DE BLUR ---
+blur {
+    passes 4
+    offset 4.0
+    noise 0.02
+    saturation 1.1
+}
+
+// 7. Atalhos de Teclado (Binds)
+binds {
+    // --- Lançamento de Aplicações ---
+    Mod+Return { spawn "ghostty"; }
+    Mod+Z      { spawn "flatpak" "run" "app.zen_browser.zen"; }
+    Mod+C      { spawn "codium"; }
+    Mod+E      { spawn "nautilus"; }
+
+    // --- Alternar Janela Flutuante ---
+    Mod+T      { toggle-window-floating; }
+
+    // --- Integração Noctalia (IPC) ---
+    Mod+Space { spawn "quickshell" "ipc" "toggle-launcher"; }
+    Mod+V      { spawn "noctalia" "msg" "panel-toggle" "clipboard"; }
+
+    // --- Gerenciamento de Janelas ---
+    Mod+Q       { close-window; }
+    Mod+F       { maximize-column; }
+    Mod+Shift+F { fullscreen-window; }
+
+    // --- Navegação estilo Vim (H, J, K, L) ---
+    Mod+H { focus-column-left; }
+    Mod+L { focus-column-right; }
+    Mod+K { focus-workspace-up; }
+    Mod+J { focus-workspace-down; }
+
+    // --- Teclas de Mídia e Hardware do Notebook ---
+    // Controle de Áudio
+    XF86AudioRaiseVolume   { spawn "noctalia" "msg" "volume-up"; }
+    XF86AudioLowerVolume   { spawn "noctalia" "msg" "volume-down"; }
+    XF86AudioMute          { spawn "noctalia" "msg" "volume-mute"; }
+
+    // Brilho da Tela
+    XF86MonBrightnessUp    { spawn "noctalia" "msg" "brightness-up"; }
+    XF86MonBrightnessDown  { spawn "noctalia" "msg" "brightness-down"; }
+
+    // Brilho do Teclado Retroiluminado
+    XF86KbdBrightnessUp    { spawn "noctalia" "msg" "kbd-backlight-up"; }
+    XF86KbdBrightnessDown  { spawn "noctalia" "msg" "kbd-backlight-down"; }
+
+    // --- Bloqueio de Tela & Captura ---
+    // Atalho para Bloquear a Tela no Niri usando o Quickshell Material You
+    Mod+Alt+L { spawn "quickshell" "-p" "/etc/quickshell/material-you/main.qml"; }
+    Print     { spawn "sh" "-c" "grim -g \"$(slurp)\" - | wl-copy"; }
+}
