@@ -23,7 +23,7 @@ RUN dnf install -y \
     NetworkManager-wifi \
     bluez-tools
 
-# 3. Gerenciador de Login, Compositor e Shell (Ajustado: qt6-qtshadertools)
+# 3. Gerenciador de Login, Compositor e Shell
 RUN dnf install -y \
     greetd \
     niri \
@@ -100,4 +100,5 @@ RUN systemctl enable NetworkManager.service && \
     systemctl enable podman.socket && \
     systemctl enable bootc-fetch-apply-updates.service
 
-OSTREE_CONTAINER_OPTION_TRANSIENT_ETC=true
+# Configuração de persistência de estado do bootc
+ENV OSTREE_CONTAINER_OPTION_TRANSIENT_ETC=true
