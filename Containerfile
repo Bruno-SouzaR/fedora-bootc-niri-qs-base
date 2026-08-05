@@ -14,7 +14,7 @@ RUN dnf install -y 'dnf5-command(copr)' && \
     dnf copr enable -y yalter/niri && \
     dnf copr enable -y scottames/ghostty
 
-# 2. Drivers de Vídeo e Recursos de Hardware (AMD/Intel Lunar Lake)
+# 2. Drivers de Vídeo e Recursos de Hardware (AMD/Intel)
 RUN dnf install -y \
     mesa-dri-drivers \
     mesa-vulkan-drivers \
@@ -85,17 +85,14 @@ RUN dnf install -y \
     distrobox \
     flatpak
 
-# Limpeza de cache do DNF5
+# Limpeza do cache do DNF5
 RUN dnf clean all && rm -rf /var/cache/dnf/*
 
 # ==============================================================================
-# ESTÁGIO 3: Configurações, Initramfs e Serviços
+# ESTÁGIO 3: Copiando Arquivos Locais e Habilitando Serviços
 # ==============================================================================
 
 COPY system_files/ /
-
-# Regenera o initramfs garantindo o carregamento dos módulos do Kernel 7.x do Fedora 44
-RUN dracut --regenerate-all --force
 
 # Ativação de Serviços do Systemd
 RUN systemctl enable NetworkManager.service && \
