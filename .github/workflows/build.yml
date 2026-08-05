@@ -1,0 +1,88 @@
+name: Build and Push Fedora bootc Image
+
+on:
+  pull_request:
+    branches:
+      - main
+  schedule:
+    - cron: '05 10 * * *'  # Compila diariamente às 10:05 UTC para pegar atualizações do kernel/Fedora
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**/README.md'
+  workflow_dispatch:
+
+env:
+  IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"
+  IMAGE_NAME: "fedora-bootc-niri-qs-base"
+
+jobs:
+  build_push:
+    name: Build and push image
+    runs-on: ubuntu-24.04
+
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # 1. Libera espaço no disco da máquina do GitHub Actions
+      - name: Maximize build space
+        uses: ublue-os/remove-unwanted-software@v7
+
+      - name: Prepare environment
+        run: |
+          echo "IMAGE_REGISTRY=${IMAGE_REGISTRY,,}" >> ${GITHUB_ENV}
+          echo "IMAGE_NAME=${IMAGE_NAME,,}" >> ${GITHUB_ENV}
+
+      # 2. Login de Contêineres (Docker + Podman)
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Podman login to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | sudo podman login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      # 3. Compilação Direta da Imagem OCI via Podman
+      - name: Build Image
+        run: |
+          sudo podman build -t ${IMAGE_NAME}:latest -f Containerfile .
+
+      # 4. Publicação da Imagem no GHCR (Apenas em Push na Main)
+      - name: Push To GHCR
+        if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        id: push-image
+        run: |
+          set -euox pipefail
+          sudo podman tag ${IMAGE_NAME}:latest ${IMAGE_REGISTRY}/${IMAGE_NAME}:latest
+          sudo podman push --digestfile=/tmp/digestfile ${IMAGE_REGISTRY}/${IMAGE_NAME}:latest
+
+          digest=$(< /tmp/digestfile)
+          echo "digest=${digest}" >> $GITHUB_OUTPUT
+
+      # 5. Instalação do Cosign e Assinatura Digital
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+        if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+
+      - name: Sign container image
+        if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        env:
+          COSIGN_EXPERIMENTAL: false
+          COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
+          DIGEST: ${{ steps.push-image.outputs.digest }}
+        run: |
+          if [ -n "${COSIGN_PRIVATE_KEY:-}" ]; then
+            cosign sign -y --key env://COSIGN_PRIVATE_KEY ${IMAGE_REGISTRY}/${IMAGE_NAME}@${DIGEST}
+          else
+            echo "Secret SIGNING_SECRET não configurado. Pulando assinatura."
+          fi
