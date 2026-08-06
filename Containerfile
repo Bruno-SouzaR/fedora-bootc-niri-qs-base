@@ -6,15 +6,15 @@ FROM ghcr.io/ublue-os/base-main:44 AS base
 ENV INTERACTIVE=0
 
 # ==============================================================================
-# ESTÁGIO 2: Repositórios COPR e Ferramentas Personalizadas
+# ESTÁGIO 2: Repositórios COPR e Instalação Otimizada de Pacotes
 # ==============================================================================
 
-# 1. Habilitar COPRs para Niri e Ghostty
+# 1. Habilitar COPRs
 RUN dnf install -y 'dnf5-command(copr)' && \
     dnf copr enable -y yalter/niri && \
     dnf copr enable -y scottames/ghostty
 
-# 2. Gerenciador de Login SDDM, Niri, Quickshell, Portais e Bibliotecas Qt6
+# 2. Instalação de Todos os Pacotes em uma Única Camada
 RUN dnf install -y \
     sddm \
     sddm-wayland-plasma \
@@ -27,10 +27,7 @@ RUN dnf install -y \
     xwayland-satellite \
     quickshell \
     xdg-desktop-portal-gnome \
-    polkit-kde-agent-1
-
-# 3. Aplicações Nativas e Utilitários de Desktop
-RUN dnf install -y \
+    polkit-kde-agent-1 \
     ghostty \
     nautilus \
     gvfs-fuse \
@@ -38,10 +35,7 @@ RUN dnf install -y \
     file-roller \
     grim \
     slurp \
-    wl-clipboard
-
-# 4. CLI Dev, Produtividade e Ferramentas Diárias
-RUN dnf install -y \
+    wl-clipboard \
     git \
     gh \
     ripgrep \
@@ -57,16 +51,15 @@ RUN dnf install -y \
     tar \
     curl \
     wget \
-    distrobox
-
-# Limpeza de cache do DNF5
-RUN dnf clean all && rm -rf /var/cache/dnf/*
+    distrobox && \
+    dnf clean all && \
+    rm -rf /var/cache/dnf/*
 
 # ==============================================================================
 # ESTÁGIO 3: Copiando Configurações Locais e Ativando Serviços
 # ==============================================================================
 
-# Copia a árvore de configurações (incluindo a pasta limpa do pixie-sddm)
+# Copia a árvore de configurações
 COPY system_files/ /
 
 # Habilita o SDDM como gerenciador de login padrão

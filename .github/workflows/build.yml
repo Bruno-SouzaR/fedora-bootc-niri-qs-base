@@ -1,88 +1,69 @@
-name: Build and Push Fedora bootc Image
+name: Build and Push Bootc Image
 
 on:
-  pull_request:
-    branches:
-      - main
-  schedule:
-    - cron: '05 10 * * *'  # Compila diariamente às 10:05 UTC para pegar atualizações do kernel/Fedora
   push:
     branches:
       - main
-    paths-ignore:
-      - '**/README.md'
-  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch: # Permite disparar o build manualmente na aba Actions
 
 env:
-  IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"
-  IMAGE_NAME: "fedora-bootc-niri-qs-base"
+  IMAGE_NAME: fedora-bootc-niri-qs-base
+  IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
 
 jobs:
-  build_push:
-    name: Build and push image
-    runs-on: ubuntu-24.04
-
+  build:
+    name: Build and Push OCI Image
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
       id-token: write
 
     steps:
-      - name: Checkout Repository
+      # 1. Libera espaço em disco no runner do GitHub para evitar travamentos durante o commit do ostree
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@v10
+        with:
+          root-reserve-mb: 2048
+          swap-size-mb: 1024
+          remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-haskell: 'true'
+          remove-codeql: 'true'
+          remove-docker-images: 'true'
+
+      # 2. Baixa o código do repositório
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 1. Libera espaço no disco da máquina do GitHub Actions
-      - name: Maximize build space
-        uses: ublue-os/remove-unwanted-software@v7
+      # 3. Compila a imagem OCI com Buildah
+      - name: Build Image
+        id: build-image
+        uses: redhat-actions/buildah-build@v2
+        with:
+          image: ${{ env.IMAGE_NAME }}
+          tags: latest ${{ github.sha }}
+          containerfiles: |
+            ./Containerfile
+          oci: true
 
-      - name: Prepare environment
-        run: |
-          echo "IMAGE_REGISTRY=${IMAGE_REGISTRY,,}" >> ${GITHUB_ENV}
-          echo "IMAGE_NAME=${IMAGE_NAME,,}" >> ${GITHUB_ENV}
-
-      # 2. Login de Contêineres (Docker + Podman)
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
+      # 4. Faz login no GitHub Container Registry (GHCR)
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request'
+        uses: redhat-actions/podman-login@v1
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Podman login to GHCR
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | sudo podman login ghcr.io -u "${{ github.actor }}" --password-stdin
-
-      # 3. Compilação Direta da Imagem OCI via Podman
-      - name: Build Image
-        run: |
-          sudo podman build -t ${IMAGE_NAME}:latest -f Containerfile .
-
-      # 4. Publicação da Imagem no GHCR (Apenas em Push na Main)
-      - name: Push To GHCR
-        if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-        id: push-image
-        run: |
-          set -euox pipefail
-          sudo podman tag ${IMAGE_NAME}:latest ${IMAGE_REGISTRY}/${IMAGE_NAME}:latest
-          sudo podman push --digestfile=/tmp/digestfile ${IMAGE_REGISTRY}/${IMAGE_NAME}:latest
-
-          digest=$(< /tmp/digestfile)
-          echo "digest=${digest}" >> $GITHUB_OUTPUT
-
-      # 5. Instalação do Cosign e Assinatura Digital
-      - name: Install Cosign
-        uses: sigstore/cosign-installer@v3
-        if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-
-      - name: Sign container image
-        if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-        env:
-          COSIGN_EXPERIMENTAL: false
-          COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
-          DIGEST: ${{ steps.push-image.outputs.digest }}
-        run: |
-          if [ -n "${COSIGN_PRIVATE_KEY:-}" ]; then
-            cosign sign -y --key env://COSIGN_PRIVATE_KEY ${IMAGE_REGISTRY}/${IMAGE_NAME}@${DIGEST}
-          else
-            echo "Secret SIGNING_SECRET não configurado. Pulando assinatura."
-          fi
+      # 5. Publica a imagem no GHCR
+      - name: Push Image to GHCR
+        if: github.event_name != 'pull_request'
+        uses: redhat-actions/push-to-registry@v2
+        with:
+          image: ${{ steps.build-image.outputs.image }}
+          tags: ${{ steps.build-image.outputs.tags }}
+          registry: ${{ env.IMAGE_REGISTRY }}
