@@ -96,8 +96,10 @@ RUN dnf clean all && rm -rf /var/cache/dnf/*
 
 COPY system_files/ /
 
-# 1. Cria o usuário do sistema 'greeter' exigido pelo greetd
-RUN useradd -r -M -d /var/lib/greetd -s /sbin/nologin -G video,input greeter || true
+# 1. Cria o usuário e o diretório de estado do 'greeter' exigido pelo greetd
+RUN useradd -r -M -d /var/lib/greetd -s /sbin/nologin -G video,input,render greeter || true && \
+    mkdir -p /var/lib/greetd && \
+    chown -R greeter:greeter /var/lib/greetd
 
 # 2. Mascara o serviço que falhava ao tentar remontar a raiz OCI
 RUN systemctl mask systemd-remount-fs.service
