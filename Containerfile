@@ -14,7 +14,7 @@ RUN dnf install -y 'dnf5-command(copr)' && \
     dnf copr enable -y yalter/niri && \
     dnf copr enable -y scottames/ghostty
 
-# 2. Gerenciador de Login SDDM (Qt6/Wayland), Niri, Quickshell, Portais e Libs QML
+# 2. Gerenciador de Login SDDM, Niri, Quickshell, Portais e Bibliotecas Qt6
 RUN dnf install -y \
     sddm \
     sddm-wayland-plasma \
@@ -66,7 +66,7 @@ RUN dnf clean all && rm -rf /var/cache/dnf/*
 # ESTÁGIO 3: Copiando Configurações Locais e Ativando Serviços
 # ==============================================================================
 
-# Copia a árvore de configurações (incluindo o tema do SDDM)
+# Copia a árvore de configurações (incluindo a pasta limpa do pixie-sddm)
 COPY system_files/ /
 
 # Habilita o SDDM como gerenciador de login padrão
