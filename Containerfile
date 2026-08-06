@@ -14,19 +14,22 @@ RUN dnf install -y 'dnf5-command(copr)' && \
     dnf copr enable -y yalter/niri && \
     dnf copr enable -y scottames/ghostty
 
-# 2. Compositor Niri, Quickshell, Greetd e Portais
+# 2. Gerenciador de Login SDDM (Qt6/Wayland), Niri, Quickshell, Portais e Libs QML
 RUN dnf install -y \
-    greetd \
-    niri \
-    xwayland-satellite \
-    quickshell \
+    sddm \
+    sddm-wayland-plasma \
     qt6-qtdeclarative \
     qt6-qtwayland \
     qt6-qtshadertools \
+    qt6-qt5compat \
+    qt6-qtsvg \
+    niri \
+    xwayland-satellite \
+    quickshell \
     xdg-desktop-portal-gnome \
     polkit-kde-agent-1
 
-# 3. Aplicações de Desktop Nativas e Utilitários Wayland
+# 3. Aplicações Nativas e Utilitários de Desktop
 RUN dnf install -y \
     ghostty \
     nautilus \
@@ -63,11 +66,11 @@ RUN dnf clean all && rm -rf /var/cache/dnf/*
 # ESTÁGIO 3: Copiando Configurações Locais e Ativando Serviços
 # ==============================================================================
 
-# Copia a árvore de configurações da sua interface (Niri, Quickshell, greetd, etc)
+# Copia a árvore de configurações (incluindo o tema do SDDM)
 COPY system_files/ /
 
-# Habilita o gerenciador de login greetd
-RUN systemctl enable greetd.service
+# Habilita o SDDM como gerenciador de login padrão
+RUN systemctl enable sddm.service
 
 # Sela a camada OCI para compatibilidade nativa com o OSTree
 RUN ostree container commit
