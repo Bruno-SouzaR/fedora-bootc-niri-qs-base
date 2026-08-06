@@ -7,7 +7,7 @@ on:
   pull_request:
     branches:
       - main
-  workflow_dispatch: # Permite disparar o build manualmente na aba Actions
+  workflow_dispatch:
 
 env:
   IMAGE_NAME: fedora-bootc-niri-qs-base
@@ -23,19 +23,16 @@ jobs:
       id-token: write
 
     steps:
-      # 1. Libera espaço em disco no runner do GitHub para evitar travamentos durante o commit do ostree
-      - name: Maximize build space
-        uses: easimon/maximize-build-space@v10
-        with:
-          root-reserve-mb: 2048
-          swap-size-mb: 1024
-          remove-dotnet: 'true'
-          remove-android: 'true'
-          remove-haskell: 'true'
-          remove-codeql: 'true'
-          remove-docker-images: 'true'
+      # 1. Limpeza segura de disco no Runner (sem alterar partições)
+      - name: Free Disk Space (Safe)
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
 
-      # 2. Baixa o código do repositório
+      # 2. Checkout do código
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -50,7 +47,7 @@ jobs:
             ./Containerfile
           oci: true
 
-      # 4. Faz login no GitHub Container Registry (GHCR)
+      # 4. Login no GHCR
       - name: Log in to GHCR
         if: github.event_name != 'pull_request'
         uses: redhat-actions/podman-login@v1
@@ -59,7 +56,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 5. Publica a imagem no GHCR
+      # 5. Push para o GHCR
       - name: Push Image to GHCR
         if: github.event_name != 'pull_request'
         uses: redhat-actions/push-to-registry@v2

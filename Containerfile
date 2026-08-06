@@ -64,6 +64,3 @@ COPY system_files/ /
 
 # Habilita o SDDM como gerenciador de login padrão
 RUN systemctl enable sddm.service
-
-# Sela a camada OCI para compatibilidade nativa com o OSTree
-RUN ostree container commit
