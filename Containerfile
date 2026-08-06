@@ -25,7 +25,7 @@ RUN dnf install -y \
     NetworkManager-wifi \
     bluez-tools
 
-# 3. Fontes, Tipografia e Renderização de Sistema (Inspirado no ublue-os/base)
+# 3. Fontes, Tipografia e Renderização de Sistema
 RUN dnf install -y \
     fontconfig \
     google-noto-sans-fonts \
@@ -113,29 +113,28 @@ RUN dnf install -y \
     distrobox \
     flatpak
 
-# Limpeza de cache do DNF5 para reduzir tamanho da imagem
+# Limpeza do cache do DNF5
 RUN dnf clean all && rm -rf /var/cache/dnf/*
 
-# Adicionar repositório oficial Flathub por padrão no sistema
+# Adicionar repositório oficial Flathub por padrão
 RUN flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 
 # ==============================================================================
-# ESTÁGIO 3: Configurações do Host, Usuários, Serviços e OSTree Commit
+# ESTÁGIO 3: Processamento Nativo do Systemd, Configurações e OSTree Commit
 # ==============================================================================
 
-# Copia a árvore de arquivos locais de configuração para o /
+# 1. Processa declarativamente todos os usuários de sistema (incluindo o 'greeter' do greetd)
+RUN systemd-sysusers
+
+# 2. Copia os arquivos de configuração customizados (suas configs do Niri/Quickshell/greetd)
 COPY system_files/ /
 
-# 1. Cria o grupo e usuário do 'greeter' de forma isolada e configura o diretório
-RUN groupadd -r greeter || true && \
-    useradd -r -g greeter -M -d /var/lib/greetd -s /sbin/nologin greeter || true && \
-    mkdir -p /var/lib/greetd && \
-    chown -R greeter:greeter /var/lib/greetd
+# 3. Garante permissões adequadas no diretório do greetd e atribui shell de login válido
+RUN mkdir -p /var/lib/greetd && \
+    chown -R greeter:greeter /var/lib/greetd && \
+    usermod -s /bin/bash greeter
 
-# 2. Mascara o serviço de remontagem da raiz para evitar conflito no boot OCI
-RUN systemctl mask systemd-remount-fs.service
-
-# 3. Ativação dos Serviços Essenciais do Systemd
+# 4. Habilita os serviços nativos do systemd
 RUN systemctl enable NetworkManager.service && \
     systemctl enable bluetooth.service && \
     systemctl enable greetd.service && \
@@ -145,5 +144,5 @@ RUN systemctl enable NetworkManager.service && \
 
 ENV OSTREE_CONTAINER_OPTION_TRANSIENT_ETC=true
 
-# Sela a camada OCI para compatibilidade nativa com o motor de boot do OSTree
+# Registra a imagem OCI para o gerenciador de boot do OSTree
 RUN ostree container commit
