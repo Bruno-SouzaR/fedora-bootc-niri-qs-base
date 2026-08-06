@@ -11,7 +11,6 @@ on:
 
 env:
   IMAGE_NAME: fedora-bootc-niri-qs-base
-  IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
 
 jobs:
   build:
@@ -23,7 +22,7 @@ jobs:
       id-token: write
 
     steps:
-      # 1. Limpeza segura de disco no Runner (sem alterar partições)
+      # 1. Limpeza segura de disco no Runner
       - name: Free Disk Space (Safe)
         run: |
           sudo rm -rf /usr/share/dotnet
@@ -36,7 +35,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 3. Compila a imagem OCI com Buildah
+      # 3. Converte o nome do usuário/organização para minúsculas (exigência OCI/GHCR)
+      - name: Set Lowercase Registry URL
+        run: |
+          echo "IMAGE_REGISTRY=ghcr.io/$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      # 4. Compila a imagem OCI com Buildah
       - name: Build Image
         id: build-image
         uses: redhat-actions/buildah-build@v2
@@ -47,7 +51,7 @@ jobs:
             ./Containerfile
           oci: true
 
-      # 4. Login no GHCR
+      # 5. Login no GHCR
       - name: Log in to GHCR
         if: github.event_name != 'pull_request'
         uses: redhat-actions/podman-login@v1
@@ -56,10 +60,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 5. Push para o GHCR
+      # 6. Push para o GHCR (usando a versão v3 atualizada)
       - name: Push Image to GHCR
         if: github.event_name != 'pull_request'
-        uses: redhat-actions/push-to-registry@v2
+        uses: redhat-actions/push-to-registry@v3
         with:
           image: ${{ steps.build-image.outputs.image }}
           tags: ${{ steps.build-image.outputs.tags }}
