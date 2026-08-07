@@ -18,14 +18,16 @@ output "eDP-1" {
 environment {
     BROWSER "flatpak run app.zen_browser.zen"
     TERMINAL "ghostty"
-    EDITOR "codium"
+    EDITOR "flatpak run com.vscodium.codium"
 }
 
 // 2. Inicialização Automática de Serviços
 spawn-at-startup "xwayland-satellite"
-
-// Inicializa a sua Top Bar em Quickshell no boot do Niri
-spawn-at-startup "quickshell" "-p" "/etc/quickshell/topbar/shell.qml"
+spawn-at-startup "swww-daemon"
+spawn-at-startup "blueman-applet"
+spawn-at-startup "/usr/libexec/kf6/polkit-kde-authentication-agent-1"
+spawn-at-startup "quickshell" "--path" "/etc/quickshell/topbar/pill"
+spawn-at-startup "quickshell" "--path" "/etc/quickshell/topbar/launcher"
 
 // 3. Configurações de Entrada (Mouse, Teclado br e Touchpad)
 input {
@@ -82,7 +84,7 @@ window-rule {
 // --- REGRAS DE CAMADAS (Barra Superior e Widgets) ---
 layer-rule {
     background-effect {
-        blur true
+        blur false
         xray false
     }
 }
@@ -100,15 +102,17 @@ binds {
     // --- Lançamento de Aplicações ---
     Mod+Return { spawn "ghostty"; }
     Mod+Z      { spawn "flatpak" "run" "app.zen_browser.zen"; }
-    Mod+C      { spawn "codium"; }
+    Mod+C      { spawn "flatpak" "run" "com.vscodium.codium"; }
     Mod+E      { spawn "nautilus"; }
 
     // --- Alternar Janela Flutuante ---
     Mod+T      { toggle-window-floating; }
 
-    // --- Integração Noctalia (IPC) ---
-    Mod+Space { spawn "quickshell" "ipc" "toggle-launcher"; }
-    Mod+V      { spawn "noctalia" "msg" "panel-toggle" "clipboard"; }
+    // --- Integração Pill(IPC) ---
+    Mod+Space { spawn "sh" "-c" "quickshell --path /etc/quickshell/topbar/launcher ipc call launcher toggle $(niri msg -j focused-output | jq -r .name)"; }
+    Mod+W     { spawn "sh" "-c" "quickshell --path /etc/quickshell/topbar/pill ipc call pill wallpaper $(niri msg -j focused-output | jq -r .name)"; }
+    Mod+M { spawn "quickshell" "--path" "/etc/quickshell/topbar/pill" "ipc" "call" "pill" "settings" ""; }
+    Mod+V { spawn "sh" "-c" "quickshell --path /etc/quickshell/topbar/pill ipc call pill clipboard $(niri msg -j focused-output | jq -r .name)"; }
 
     // --- Gerenciamento de Janelas ---
     Mod+Q       { close-window; }
@@ -123,20 +127,20 @@ binds {
 
     // --- Teclas de Mídia e Hardware do Notebook ---
     // Controle de Áudio
-    XF86AudioRaiseVolume   { spawn "noctalia" "msg" "volume-up"; }
-    XF86AudioLowerVolume   { spawn "noctalia" "msg" "volume-down"; }
-    XF86AudioMute          { spawn "noctalia" "msg" "volume-mute"; }
+    XF86AudioRaiseVolume allow-when-locked=true { spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "5%+" "-l" "1.0"; }
+    XF86AudioLowerVolume allow-when-locked=true { spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "5%-"; }
+    XF86AudioMute        allow-when-locked=true { spawn "wpctl" "set-mute" "@DEFAULT_AUDIO_SINK@" "toggle"; }
+    XF86AudioMicMute     allow-when-locked=true { spawn "wpctl" "set-source-mute" "@DEFAULT_AUDIO_SOURCE@" "toggle"; }
 
-    // Brilho da Tela
-    XF86MonBrightnessUp    { spawn "noctalia" "msg" "brightness-up"; }
-    XF86MonBrightnessDown  { spawn "noctalia" "msg" "brightness-down"; }
+    // Brilho da Tela   
+    XF86MonBrightnessUp   allow-when-locked=true { spawn "brightnessctl" "set" "+5%"; }
+    XF86MonBrightnessDown allow-when-locked=true { spawn "brightnessctl" "set" "5%-"; }
 
     // Brilho do Teclado Retroiluminado
     XF86KbdBrightnessUp    { spawn "noctalia" "msg" "kbd-backlight-up"; }
     XF86KbdBrightnessDown  { spawn "noctalia" "msg" "kbd-backlight-down"; }
 
     // --- Bloqueio de Tela & Captura ---
-    // Atalho para Bloquear a Tela no Niri usando o Quickshell Material You
-    Mod+Alt+L { spawn "quickshell" "-p" "/etc/quickshell/material-you/main.qml"; }
+    Mod+Alt+L { spawn "sh" "-c" "quickshell -b qylock -c ~/.config/quickshell/qylock/main.qml"; }
     Print     { spawn "sh" "-c" "grim -g \"$(slurp)\" - | wl-copy"; }
 }

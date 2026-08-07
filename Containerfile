@@ -32,6 +32,7 @@ RUN dnf install -y \
     brightnessctl \
     xdg-desktop-portal-gnome \
     bluez-tools \
+    blueman \
     pipewire-pulseaudio \
     polkit-kde-agent-1 \
     ghostty \
