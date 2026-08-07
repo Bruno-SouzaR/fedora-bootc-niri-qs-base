@@ -31,10 +31,8 @@ RUN dnf install -y \
     matugen \
     brightnessctl \
     xdg-desktop-portal-gnome \
-    bluez \
     bluez-tools \
-    pipewire-plugin-libspa-bluetooth \
-    polkit-gnome \
+    pipewire-pulseaudio \
     polkit-kde-agent-1 \
     ghostty \
     nautilus \
