@@ -24,7 +24,7 @@ environment {
 // 2. Inicialização Automática de Serviços
 spawn-at-startup "xwayland-satellite"
 spawn-at-startup "swww-daemon"
-spawn-at-startup "blueman-applet"
+spawn-at-startup "bt-agent" "-c" "NoInputNoOutput"
 spawn-at-startup "/usr/libexec/kf6/polkit-kde-authentication-agent-1"
 spawn-at-startup "quickshell" "--path" "/etc/quickshell/topbar/pill"
 spawn-at-startup "quickshell" "--path" "/etc/quickshell/topbar/launcher"
