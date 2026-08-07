@@ -29,6 +29,7 @@ RUN dnf install -y \
     quickshell \
     swww \
     matugen \
+    brightnessctl \
     xdg-desktop-portal-gnome \
     polkit-kde-agent-1 \
     ghostty \
