@@ -6,15 +6,16 @@ FROM ghcr.io/ublue-os/base-main:44 AS base
 ENV INTERACTIVE=0
 
 # ==============================================================================
-# ESTÁGIO 2: Repositórios COPR e Instalação Otimizada de Pacotes
+# ESTÁGIO 2: Repositórios COPR e Instalação de Pacotes
 # ==============================================================================
 
-# 1. Habilitar COPRs
+# 1. Habilitar COPRs para Niri, Ghostty e utilitários Wayland (swww/matugen)
 RUN dnf install -y 'dnf5-command(copr)' && \
     dnf copr enable -y yalter/niri && \
-    dnf copr enable -y scottames/ghostty
+    dnf copr enable -y scottames/ghostty && \
+    dnf copr enable -y solopasha/hyprland
 
-# 2. Instalação de Todos os Pacotes em uma Única Camada
+# 2. Instalação Consolidada dos Pacotes
 RUN dnf install -y \
     sddm \
     sddm-wayland-plasma \
@@ -26,6 +27,8 @@ RUN dnf install -y \
     niri \
     xwayland-satellite \
     quickshell \
+    swww \
+    matugen \
     xdg-desktop-portal-gnome \
     polkit-kde-agent-1 \
     ghostty \

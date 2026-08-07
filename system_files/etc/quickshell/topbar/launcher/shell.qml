@@ -74,7 +74,7 @@ ShellRoot {
             id: win
             required property var modelData
             screen: modelData
-            visible: root.shown && root.targetMonitor === modelData.name
+            visible: root.shown && (root.targetMonitor === "" || root.targetMonitor === modelData.name)
 
             color: "transparent"
             exclusionMode: ExclusionMode.Ignore
