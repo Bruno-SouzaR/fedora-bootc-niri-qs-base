@@ -15,7 +15,7 @@ RUN dnf install -y 'dnf5-command(copr)' && \
     dnf copr enable -y scottames/ghostty && \
     dnf copr enable -y solopasha/hyprland
 
-# 2. Instalação Consolidada dos Pacotes
+# 2. Instalação Consolidada dos Pacotes (incluindo Zsh, plugins nativos e fontconfig)
 RUN dnf install -y \
     sddm \
     sddm-wayland-plasma \
@@ -57,15 +57,38 @@ RUN dnf install -y \
     tar \
     curl \
     wget \
-    distrobox && \
+    distrobox \
+    zsh \
+    zsh-autosuggestions \
+    zsh-syntax-highlighting \
+    fontconfig && \
     dnf clean all && \
     rm -rf /var/cache/dnf/*
 
 # ==============================================================================
-# ESTÁGIO 3: Copiando Configurações Locais e Ativando Serviços
+# ESTÁGIO 3: Configuração da JetBrains Mono Nerd Font, Zsh e Defaults
 # ==============================================================================
 
-# Copia a árvore de configurações
+# 1. Baixar e Instalar a JetBrains Mono Nerd Font (Completa + Mono)
+RUN mkdir -p /usr/share/fonts/JetBrainsMono && \
+    curl -fLo /tmp/JetBrainsMono.zip https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip && \
+    unzip -o /tmp/JetBrainsMono.zip -d /usr/share/fonts/JetBrainsMono/ && \
+    rm -f /tmp/JetBrainsMono.zip && \
+    fc-cache -f -v
+
+# 2. Clonar Temas e Plugins Adicionais do Zsh para /usr/share/zsh
+RUN mkdir -p /usr/share/zsh/plugins /usr/share/zsh/themes && \
+    git clone --depth=1 https://github.com/romkatv/powerlevel10k.git /usr/share/zsh/themes/powerlevel10k && \
+    git clone --depth=1 https://github.com/marlonrichert/zsh-autocomplete.git /usr/share/zsh/plugins/zsh-autocomplete
+
+# 3. Alterar o shell padrão do sistema para Zsh
+RUN sed -i 's|SHELL=/bin/bash|SHELL=/bin/zsh|g' /etc/default/useradd
+
+# ==============================================================================
+# ESTÁGIO 4: Copiando Configurações Locais e Ativando Serviços
+# ==============================================================================
+
+# Copia a árvore de configurações (incluindo system_files/etc/skel/.zshrc)
 COPY system_files/ /
 
 # Habilita o SDDM como gerenciador de login padrão
