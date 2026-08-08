@@ -224,22 +224,7 @@ ShellRoot {
         PanelWindow {
             id: reserve
             required property var modelData
-            readonly property real s: {
-
-                if (!modelData) return 1;
-                        
-                // Cálculo base proporcional à altura da tela
-                var baseScale = (modelData.height / 1080) * Flags.uiScale;
-                
-                // Ajuste fino individual por monitor:
-                if (modelData.name === "eDP-1") {
-                    return baseScale * 1.0; // Mantém tamanho padrão no monitor principal
-                } else if (modelData.name === "DP-1") {
-                    return baseScale * 0.80;  // Diminui em 20% o tamanho da Pill no monitor externo
-                }
-                
-                return baseScale;
-                }
+            readonly property real s: modelData ? (modelData.height / 1080) * Flags.uiScale : 1
             readonly property real topGap: 8 * Flags.topGap * s
             readonly property real restHeight: 38 * s
 

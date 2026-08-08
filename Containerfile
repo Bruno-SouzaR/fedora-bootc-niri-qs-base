@@ -6,16 +6,18 @@ FROM ghcr.io/ublue-os/base-main:44 AS base
 ENV INTERACTIVE=0
 
 # ==============================================================================
-# ESTÁGIO 2: Repositórios COPR e Instalação de Pacotes
+# ESTÁGIO 2: Repositórios COPR, Repositório VSCodium e Instalação de Pacotes
 # ==============================================================================
 
-# 1. Habilitar COPRs para Niri, Ghostty e utilitários Wayland (swww/matugen)
+# 1. Habilitar COPRs (Niri, Ghostty, Hyprland) e Repositório Oficial RPM do VSCodium
 RUN dnf install -y 'dnf5-command(copr)' && \
     dnf copr enable -y yalter/niri && \
     dnf copr enable -y scottames/ghostty && \
-    dnf copr enable -y solopasha/hyprland
+    dnf copr enable -y solopasha/hyprland && \
+    rpm --import https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg && \
+    printf "[gitlab.com_paulcarroty_vscodium_repo]\nname=download.vscodium.com\nbaseurl=https://download.vscodium.com/rpms/\nenabled=1\ngpgcheck=1\nrepo_gpgcheck=1\ngpgkey=https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg\nmetadata_expire=1h\n" > /etc/yum.repos.d/vscodium.repo
 
-# 2. Instalação Consolidada dos Pacotes
+# 2. Instalação Consolidada dos Pacotes (incluindo VSCodium/codium)
 RUN dnf install -y \
     sddm \
     sddm-wayland-plasma \
@@ -35,6 +37,7 @@ RUN dnf install -y \
     pipewire-pulseaudio \
     polkit-kde-agent-1 \
     ghostty \
+    codium \
     nautilus \
     gvfs-fuse \
     gvfs-mtp \
@@ -62,12 +65,14 @@ RUN dnf install -y \
     zsh \
     zsh-autosuggestions \
     zsh-syntax-highlighting \
-    fontconfig && \
+    fontconfig \
+    power-profiles-daemon \
+    powercap-utils && \
     dnf clean all && \
     rm -rf /var/cache/dnf/*
 
 # ==============================================================================
-# ESTÁGIO 3: Configuração da JetBrains Mono Nerd Font, Zsh e Defaults
+# ESTÁGIO 3: Configuração da JetBrains Mono Nerd Font, Zsh, Symlinks e Defaults
 # ==============================================================================
 
 # 1. Baixar, Instalar e Definir Permissões Globais da JetBrains Mono Nerd Font
@@ -83,7 +88,10 @@ RUN mkdir -p /usr/share/zsh/plugins /usr/share/zsh/themes && \
     git clone --depth=1 https://github.com/romkatv/powerlevel10k.git /usr/share/zsh/themes/powerlevel10k && \
     git clone --depth=1 https://github.com/marlonrichert/zsh-autocomplete.git /usr/share/zsh/plugins/zsh-autocomplete
 
-# 3. Alterar o shell padrão do sistema para Zsh e criar diretório do skel para screenshots
+# 3. Criar link simbólico para permitir o comando `vscodium` no terminal
+RUN ln -s /usr/bin/codium /usr/bin/vscodium
+
+# 4. Alterar o shell padrão do sistema para Zsh e criar diretório do skel para screenshots
 RUN sed -i 's|SHELL=/bin/bash|SHELL=/bin/zsh|g' /etc/default/useradd && \
     mkdir -p /etc/skel/Pictures/Screenshots
 
@@ -94,5 +102,5 @@ RUN sed -i 's|SHELL=/bin/bash|SHELL=/bin/zsh|g' /etc/default/useradd && \
 # Copia a árvore de configurações
 COPY system_files/ /
 
-# Habilita o SDDM como gerenciador de login padrão
-RUN systemctl enable sddm.service
+# Habilita o SDDM e o Power Profiles Daemon como serviços do sistema
+RUN systemctl enable sddm.service power-profiles-daemon.service
