@@ -22,12 +22,24 @@ environment {
 }
 
 // 2. Inicialização Automática de Serviços
+
+//Abre programas X11
 spawn-at-startup "xwayland-satellite"
+
+// Inicializações do sistema
 spawn-at-startup "swww-daemon"
-spawn-at-startup "bt-agent" "-c" "NoInputNoOutput"
-spawn-at-startup "/usr/libexec/kf6/polkit-kde-authentication-agent-1"
 spawn-at-startup "quickshell" "--path" "/etc/quickshell/topbar/pill"
 spawn-at-startup "quickshell" "--path" "/etc/quickshell/topbar/launcher"
+
+// Agente Bluetooth Invisível (Headless)
+spawn-at-startup "bt-agent" "-c" "NoInputNoOutput"
+
+// Agente Polkit
+spawn-at-startup "/usr/libexec/kf6/polkit-kde-authentication-agent-1"
+
+// Serviço de Histórico do Clipboard (Alimenta a Pill do Quickshell)
+spawn-at-startup "wl-paste" "--type" "text" "--watch" "cliphist" "store"
+spawn-at-startup "wl-paste" "--type" "image" "--watch" "cliphist" "store"
 
 // 3. Configurações de Entrada (Mouse, Teclado br e Touchpad)
 input {
@@ -142,5 +154,9 @@ binds {
 
     // --- Bloqueio de Tela & Captura ---
     Mod+Alt+L { spawn "sh" "-c" "quickshell -b qylock -c ~/.config/quickshell/qylock/main.qml"; }
-    Print     { spawn "sh" "-c" "grim -g \"$(slurp)\" - | wl-copy"; }
+
+    // Print Screen Nativo do Niri 
+    Print { screenshot; }
+    Alt+Print { screenshot-window; }
+    Ctrl+Print { screenshot-screen; }
 }
