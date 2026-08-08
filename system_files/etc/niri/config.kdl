@@ -121,6 +121,9 @@ binds {
     // Atalho para alternar perfil de energia manualmente com notificação visual
     Mod+Shift+E { spawn "sh" "-c" "PROFILE=$(powerprofilesctl get); if [ \"$PROFILE\" = \"power-saver\" ]; then powerprofilesctl set balanced; elif [ \"$PROFILE\" = \"balanced\" ]; then powerprofilesctl set performance; else powerprofilesctl set power-saver; fi; notify-send -u low -i battery 'Perfil de Energia' \"Modo ativo: $(powerprofilesctl get)\""; }
 
+    // Alterna o limite de carga da bateria (80% <-> 100%) com notificação
+    Mod+Shift+B { spawn "/etc/niri/scripts/battery-limit.sh" "toggle"; }
+
     // --- Alternar Janela Flutuante ---
     Mod+T      { toggle-window-floating; }
 

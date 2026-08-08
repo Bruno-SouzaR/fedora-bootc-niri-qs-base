@@ -1,0 +1,2 @@
+# Libera permissão de alteração do limite de carga da bateria para usuários do sistema
+ACTION=="add|change", KERNEL=="BAT*", SUBSYSTEM=="power_supply", ATTR{charge_control_end_threshold}=="*", RUN+="/usr/bin/chmod 0666 /sys/class/power_supply/%k/charge_control_end_threshold"
