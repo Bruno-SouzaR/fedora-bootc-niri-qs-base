@@ -28,6 +28,7 @@ spawn-at-startup "xwayland-satellite"
 
 // Inicializações do sistema
 spawn-at-startup "swww-daemon"
+spawn-at-startup "/etc/niri/scripts/power-autoswitch.sh"
 spawn-at-startup "quickshell" "--path" "/etc/quickshell/topbar/pill"
 spawn-at-startup "quickshell" "--path" "/etc/quickshell/topbar/launcher"
 
@@ -116,6 +117,9 @@ binds {
     Mod+Z      { spawn "flatpak" "run" "app.zen_browser.zen"; }
     Mod+C      { spawn "flatpak" "run" "com.vscodium.codium"; }
     Mod+E      { spawn "nautilus"; }
+
+    // Atalho para alternar perfil de energia manualmente com notificação visual
+    Mod+Shift+E { spawn "sh" "-c" "PROFILE=$(powerprofilesctl get); if [ \"$PROFILE\" = \"power-saver\" ]; then powerprofilesctl set balanced; elif [ \"$PROFILE\" = \"balanced\" ]; then powerprofilesctl set performance; else powerprofilesctl set power-saver; fi; notify-send -u low -i battery 'Perfil de Energia' \"Modo ativo: $(powerprofilesctl get)\""; }
 
     // --- Alternar Janela Flutuante ---
     Mod+T      { toggle-window-floating; }
