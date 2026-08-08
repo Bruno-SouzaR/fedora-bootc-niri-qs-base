@@ -17,7 +17,7 @@ RUN dnf install -y 'dnf5-command(copr)' && \
     rpm --import https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg && \
     printf "[gitlab.com_paulcarroty_vscodium_repo]\nname=download.vscodium.com\nbaseurl=https://download.vscodium.com/rpms/\nenabled=1\ngpgcheck=1\nrepo_gpgcheck=0\ngpgkey=https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg\nmetadata_expire=1h\n" > /etc/yum.repos.d/vscodium.repo
 
-# 2. Instalação Consolidada dos Pacotes (com 'powercap' correto do Fedora)
+# 2. Instalação Consolidada dos Pacotes
 RUN dnf install -y \
     sddm \
     sddm-wayland-plasma \
@@ -66,8 +66,7 @@ RUN dnf install -y \
     zsh-autosuggestions \
     zsh-syntax-highlighting \
     fontconfig \
-    power-profiles-daemon \
-    powercap && \
+    power-profiles-daemon && \
     dnf clean all && \
     rm -rf /var/cache/dnf/*
 
