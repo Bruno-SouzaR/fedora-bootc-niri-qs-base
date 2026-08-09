@@ -178,15 +178,17 @@ ShellRoot {
             readonly property real reservedH: Math.max(0, restHeight + topGap - 12 * (1 - Flags.appGap) * s)
 
             readonly property real gameBarH: 34 * s
+            readonly property bool collapsed: root.openMon !== modelData.name && root.peekMon !== modelData.name
+                && (Flags.autoHide || (Flags.smartHide && Niri.fullscreenByMonitor[modelData.name] === true))
 
             screen: modelData
             color: "transparent"
             exclusionMode: ExclusionMode.Normal
-            exclusiveZone: Flags.gameMode ? gameBarH : reservedH
+            exclusiveZone: collapsed ? 0 : reservedH
             aboveWindows: true
 
             anchors { top: true; left: true; right: true }
-            implicitHeight: Flags.gameMode ? gameBarH : reservedH
+            implicitHeight: collapsed ? 0 : reservedH
 
             mask: emptyReserve
             Region { id: emptyReserve }
@@ -211,8 +213,10 @@ ShellRoot {
              * layer becomes click-through so fullscreen content owns the screen.
              */
             readonly property bool monFullscreen: Niri.fullscreenByMonitor[modelData.name] === true
+            readonly property bool revealWant: pill.hovered || pill.held || surfaceOpen || pill.quickChoosing || root.peekMon === modelData.name
+            readonly property bool pillHidden: !revealWant && (Flags.autoHide || (Flags.smartHide && monFullscreen))
 
-            onMonFullscreenChanged: if (monFullscreen) {
+            onPillHiddenChanged: if (pillHidden) {
                 if (root.openMon === modelData.name) root.close();
                 if (root.peekMon === modelData.name) root.peekMon = "";
                 pill.pinned = false;
@@ -227,8 +231,13 @@ ShellRoot {
 
             anchors { top: true; left: true; right: true; bottom: true }
 
-            mask: monFullscreen ? hiddenRegion : (modal ? fullRegion : pillRegion)
-            Region { id: hiddenRegion }
+            mask: pillHidden ? hiddenStripRegion : (modal ? fullRegion : pillRegion)
+            Region {
+                id: hiddenStripRegion
+                y: -4 * s
+                width: overlay.width
+                height: 7 * s
+            }
             Region {
                 id: pillRegion
                 readonly property real baseW: Math.max(pill.width, pill.targetW)
@@ -363,7 +372,7 @@ ShellRoot {
                     surface: overlay.surface
                     forcePinned: root.peekMon === overlay.modelData.name
 
-                    opacity: overlay.monFullscreen ? 0 : 1
+                    opacity: overlay.pillHidden ? 0 : 1
                     Behavior on opacity {
                         NumberAnimation {
                             duration: Motion.morph
@@ -372,7 +381,7 @@ ShellRoot {
                         }
                     }
                     transform: Translate {
-                        y: overlay.monFullscreen ? -(pill.height + overlay.topGap) : 0
+                        y: overlay.pillHidden ? -(pill.height + overlay.topGap) : 0
                         Behavior on y {
                             NumberAnimation {
                                 duration: Motion.morph
