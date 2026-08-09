@@ -9,7 +9,6 @@ ENV INTERACTIVE=0
 # ESTÁGIO 2: Repositórios COPR, Repositório VSCodium e Instalação de Pacotes
 # ==============================================================================
 
-# 1. Habilitar COPRs (Niri, Ghostty, Hyprland) e Repositório Oficial RPM do VSCodium
 RUN dnf install -y 'dnf5-command(copr)' && \
     dnf copr enable -y yalter/niri && \
     dnf copr enable -y scottames/ghostty && \
@@ -17,7 +16,6 @@ RUN dnf install -y 'dnf5-command(copr)' && \
     rpm --import https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg && \
     printf "[gitlab.com_paulcarroty_vscodium_repo]\nname=download.vscodium.com\nbaseurl=https://download.vscodium.com/rpms/\nenabled=1\ngpgcheck=1\nrepo_gpgcheck=0\ngpgkey=https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg\nmetadata_expire=1h\n" > /etc/yum.repos.d/vscodium.repo
 
-# 2. Instalação Consolidada dos Pacotes
 RUN dnf install -y \
     sddm \
     qt6-qtdeclarative \
@@ -25,6 +23,7 @@ RUN dnf install -y \
     qt6-qtshadertools \
     qt6-qt5compat \
     qt6-qtsvg \
+    qt6-gtkplatformtheme \
     niri \
     xwayland-satellite \
     quickshell \
@@ -74,7 +73,6 @@ RUN dnf install -y \
 # ESTÁGIO 3: Configuração de Fontes, Zsh, Ícones e Defaults
 # ==============================================================================
 
-# 1. Baixar, Instalar e Definir Permissões Globais da JetBrains Mono Nerd Font
 RUN mkdir -p /usr/share/fonts/JetBrainsMono && \
     curl -fLo /tmp/JetBrainsMono.zip https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip && \
     unzip -o /tmp/JetBrainsMono.zip -d /usr/share/fonts/JetBrainsMono/ && \
@@ -82,17 +80,15 @@ RUN mkdir -p /usr/share/fonts/JetBrainsMono && \
     rm -f /tmp/JetBrainsMono.zip && \
     fc-cache -f -v
 
-# 2. Clonar Temas e Plugins Adicionais do Zsh para /usr/share/zsh
 RUN mkdir -p /usr/share/zsh/plugins /usr/share/zsh/themes && \
     git clone --depth=1 https://github.com/romkatv/powerlevel10k.git /usr/share/zsh/themes/powerlevel10k && \
     git clone --depth=1 https://github.com/marlonrichert/zsh-autocomplete.git /usr/share/zsh/plugins/zsh-autocomplete
 
-# 3. Instalação do Tema de Ícones WhiteSur (Versão Alternativa Escura)
+# Instalação do Tema de Ícones WhiteSur (Versão Alternativa Escura)
 RUN git clone --depth 1 https://github.com/vinceliuice/WhiteSur-icon-theme.git /tmp/WhiteSur-icon-theme && \
     /tmp/WhiteSur-icon-theme/install.sh -a -d /usr/share/icons && \
     rm -rf /tmp/WhiteSur-icon-theme
 
-# 4. Symlink do VSCodium, Shell Padrão Zsh e Diretório Skel
 RUN ln -s /usr/bin/codium /usr/bin/vscodium && \
     sed -i 's|SHELL=/bin/bash|SHELL=/bin/zsh|g' /etc/default/useradd && \
     mkdir -p /etc/skel/Pictures/Screenshots
@@ -101,9 +97,7 @@ RUN ln -s /usr/bin/codium /usr/bin/vscodium && \
 # ESTÁGIO 4: Copiando Configurações Locais e Ativando Serviços
 # ==============================================================================
 
-# Copia a árvore de configurações
 COPY system_files/ /
 
-# Habilita o SDDM, Power Profiles Daemon e força o Target Gráfico como Padrão
 RUN systemctl enable sddm.service power-profiles-daemon.service && \
     systemctl set-default graphical.target
