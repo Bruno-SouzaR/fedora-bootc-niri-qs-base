@@ -20,7 +20,6 @@ RUN dnf install -y 'dnf5-command(copr)' && \
 # 2. Instalação Consolidada dos Pacotes
 RUN dnf install -y \
     sddm \
-    sddm-wayland-plasma \
     qt6-qtdeclarative \
     qt6-qtwayland \
     qt6-qtshadertools \
@@ -32,6 +31,7 @@ RUN dnf install -y \
     swww \
     matugen \
     brightnessctl \
+    xdg-desktop-portal-gtk \
     xdg-desktop-portal-gnome \
     bluez-tools \
     pipewire-pulseaudio \
@@ -71,7 +71,7 @@ RUN dnf install -y \
     rm -rf /var/cache/dnf/*
 
 # ==============================================================================
-# ESTÁGIO 3: Configuração da JetBrains Mono Nerd Font, Zsh, Symlinks e Defaults
+# ESTÁGIO 3: Configuração de Fontes, Zsh, Ícones e Defaults
 # ==============================================================================
 
 # 1. Baixar, Instalar e Definir Permissões Globais da JetBrains Mono Nerd Font
@@ -87,16 +87,14 @@ RUN mkdir -p /usr/share/zsh/plugins /usr/share/zsh/themes && \
     git clone --depth=1 https://github.com/romkatv/powerlevel10k.git /usr/share/zsh/themes/powerlevel10k && \
     git clone --depth=1 https://github.com/marlonrichert/zsh-autocomplete.git /usr/share/zsh/plugins/zsh-autocomplete
 
-# Instalação do Tema de Ícones WhiteSur (Versão Alternativa Escura)
+# 3. Instalação do Tema de Ícones WhiteSur (Versão Alternativa Escura)
 RUN git clone --depth 1 https://github.com/vinceliuice/WhiteSur-icon-theme.git /tmp/WhiteSur-icon-theme && \
     /tmp/WhiteSur-icon-theme/install.sh -a -d /usr/share/icons && \
     rm -rf /tmp/WhiteSur-icon-theme
 
-# 3. Criar link simbólico para permitir o comando `vscodium` no terminal
-RUN ln -s /usr/bin/codium /usr/bin/vscodium
-
-# 4. Alterar o shell padrão do sistema para Zsh e criar diretório do skel para screenshots
-RUN sed -i 's|SHELL=/bin/bash|SHELL=/bin/zsh|g' /etc/default/useradd && \
+# 4. Symlink do VSCodium, Shell Padrão Zsh e Diretório Skel
+RUN ln -s /usr/bin/codium /usr/bin/vscodium && \
+    sed -i 's|SHELL=/bin/bash|SHELL=/bin/zsh|g' /etc/default/useradd && \
     mkdir -p /etc/skel/Pictures/Screenshots
 
 # ==============================================================================
@@ -106,5 +104,6 @@ RUN sed -i 's|SHELL=/bin/bash|SHELL=/bin/zsh|g' /etc/default/useradd && \
 # Copia a árvore de configurações
 COPY system_files/ /
 
-# Habilita o SDDM e o Power Profiles Daemon como serviços do sistema
-RUN systemctl enable sddm.service power-profiles-daemon.service
+# Habilita o SDDM, Power Profiles Daemon e força o Target Gráfico como Padrão
+RUN systemctl enable sddm.service power-profiles-daemon.service && \
+    systemctl set-default graphical.target
