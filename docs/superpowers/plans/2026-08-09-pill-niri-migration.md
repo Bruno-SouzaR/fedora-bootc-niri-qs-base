@@ -16,7 +16,7 @@
 - `niri msg --json event-stream`: uma linha por evento, serde **externally-tagged** (`{"WorkspacesChanged":{"workspaces":[...]}}`).
 - Event stream entrega o estado completo logo no início (`WorkspacesChanged`/`WindowsChanged` etc., snapshots completos) e mantém workspaces/windows frescos → NÃO é preciso re-query no connect para workspaces/windows. Só a query `outputs` (que não tem evento) roda no connect via `outputsProc`; `windows` é re-query one-shot (`requeryWindows`) nos eventos de janela que não trazem payload completo.
 - `Window` **não** tem `is_fullscreen`; `Action` não tem `fullscreen-window --set`; `Mod+F` (maximize-column) NÃO é fullscreen — só `Mod+Shift+F` (`Action::FullscreenWindow` toggle) é.
-- **Por que a geometria distingue fullscreen de maximize:** o `reserve` panel reserva `exclusiveZone: reservedH` no topo; em niri o *workspace view* (e o maximize-column) respeita exclusive zones de layer-shell, então uma janela maximizada termina com `window_size` ≡ *output − reservedH − gaps* (não cobre o output). Fullscreen real (`fullscreen-window`) IGNORA exclusive zones e gaps e cobre o `logical` inteiro → `window_size` ≈ `logical`. A heurística com tolerância 1px separa os dois. (Se em algum momento `reservedH` for 0 e o user maximizar com `Mod+F`, a geometria colide — mitigado: `gaps 4` + default column-width 0.5 seguram a diferença; na prática o filtro é para vídeo/game fullscreen, que preenche o output.)
+- **Por que a geometria distingue fullscreen de maximize:** o `reserve` panel reserva `exclusiveZone: reservedH` no topo; em niri o *workspace view* (e o maximize-column) respeita exclusive zones de layer-shell, então uma janela maximizada termina com `window_size` ≡ *output − reservedH − gaps* (não cobre o output). Fullscreen real (`fullscreen-window`) IGNORA exclusive zones e gaps e cobre o `logical` inteiro → `window_size` ≈ `logical`. A heurística separa os dois com **tolerância de 1px por lado** (2px total por eixo em `window_size`, 1px no deslocamento `tile_pos_in_workspace_view`). (Se em algum momento `reservedH` for 0 e o user maximizar com `Mod+F`, a geometria colide — mitigado: `gaps 4` + default column-width 0.5 seguram a diferença; na prática o filtro é para vídeo/game fullscreen, que preenche o output.)
 - `Action::Quit { skip_confirmation }` → `niri msg action quit --skip-confirmation` (não pode esperar stdin no Process).
 - `Action::FocusWorkspace { reference }` → `niri msg action focus-workspace <idx-u8>| <name>` (o FromStr aceita índice numérico ou nome; **não** aceita id).
 - `Action::FocusWindow { id: u64 }` → `niri msg action focus-window --id <id>`.
@@ -113,9 +113,9 @@ function isFullscreenCovering(windowLayout, logicalOutput) {
     var ws = windowLayout.window_size;
     if (!ws)
         return false;
-    if (Math.abs(ws[0] - logicalOutput.width) > TOLERANCE)
+    if (Math.abs(ws[0] - logicalOutput.width) > 2 * TOLERANCE)
         return false;
-    if (Math.abs(ws[1] - logicalOutput.height) > TOLERANCE)
+    if (Math.abs(ws[1] - logicalOutput.height) > 2 * TOLERANCE)
         return false;
     var tp = windowLayout.tile_pos_in_workspace_view;
     if (tp && tp.length >= 1 && tp[0] !== null && Math.abs(tp[0]) > TOLERANCE)
