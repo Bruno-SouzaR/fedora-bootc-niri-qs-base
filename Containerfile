@@ -87,6 +87,11 @@ RUN mkdir -p /usr/share/zsh/plugins /usr/share/zsh/themes && \
     git clone --depth=1 https://github.com/romkatv/powerlevel10k.git /usr/share/zsh/themes/powerlevel10k && \
     git clone --depth=1 https://github.com/marlonrichert/zsh-autocomplete.git /usr/share/zsh/plugins/zsh-autocomplete
 
+# Instalação do Tema de Ícones WhiteSur (Versão Alternativa Escura)
+RUN git clone --depth 1 https://github.com/vinceliuice/WhiteSur-icon-theme.git /tmp/WhiteSur-icon-theme && \
+    /tmp/WhiteSur-icon-theme/install.sh -a -d /usr/share/icons && \
+    rm -rf /tmp/WhiteSur-icon-theme
+
 # 3. Criar link simbólico para permitir o comando `vscodium` no terminal
 RUN ln -s /usr/bin/codium /usr/bin/vscodium
 
