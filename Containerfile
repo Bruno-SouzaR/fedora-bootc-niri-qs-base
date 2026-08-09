@@ -88,7 +88,10 @@ RUN mkdir -p /usr/share/zsh/plugins /usr/share/zsh/themes && \
     git clone --depth=1 https://github.com/romkatv/powerlevel10k.git /usr/share/zsh/themes/powerlevel10k && \
     git clone --depth=1 https://github.com/marlonrichert/zsh-autocomplete.git /usr/share/zsh/plugins/zsh-autocomplete
 
-# 3. Ajustar Shell Padrão para Zsh e Criar Pasta de Screenshots
+# 3. Corrigir o PAM (Remove a busca por leitor de digital e evita travamento do sudo)
+RUN authselect select minimal --force
+
+# 4. Ajustar Shell Padrão para Zsh e Criar Pasta de Screenshots
 RUN sed -i 's|SHELL=/bin/bash|SHELL=/bin/zsh|g' /etc/default/useradd && \
     mkdir -p /etc/skel/Pictures/Screenshots
 
