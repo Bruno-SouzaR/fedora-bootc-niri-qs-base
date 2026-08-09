@@ -72,6 +72,8 @@ SettingsSurface {
             r.push({ item: appGapRow, kind: "scrub", bump: function (d) { appGapScrub.bump(d); } });
             r.push({ item: pillOpRow, kind: "scrub", bump: function (d) { pillOpScrub.bump(d); } });
             r.push({ item: pillBlurRow, kind: "toggle", get: function () { return Flags.pillBlur; }, set: function (v) { Flags.pillBlur = v; root.applyPillBlur(v); } });
+            r.push({ item: autoHideRow, kind: "toggle", get: function () { return Flags.autoHide; }, set: function (v) { Flags.autoHide = v; } });
+            r.push({ item: smartHideRow, kind: "toggle", get: function () { return Flags.smartHide; }, set: function (v) { Flags.smartHide = v; } });
         }
         return r;
     }
@@ -879,6 +881,28 @@ SettingsSurface {
                     openValue: root.base.appGap
                     from: 0; to: 2; step: 0.1; decimals: 1
                     onEdited: v => Flags.appGap = v
+                }
+            }
+
+            FieldRow {
+                id: autoHideRow
+                label: "Auto hide"
+                caption: "Hide the pill until the cursor touches the top edge"
+                LinkToggle {
+                    s: root.s
+                    on: Flags.autoHide
+                    onToggled: Flags.autoHide = !Flags.autoHide
+                }
+            }
+
+            FieldRow {
+                id: smartHideRow
+                label: "Smart hide"
+                caption: "Hide only in real fullscreen. Keeps the pill under Mod+F tile maximize"
+                LinkToggle {
+                    s: root.s
+                    on: Flags.smartHide
+                    onToggled: Flags.smartHide = !Flags.smartHide
                 }
             }
 
