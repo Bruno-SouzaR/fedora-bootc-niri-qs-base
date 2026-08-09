@@ -155,7 +155,6 @@ git commit -m "test(lib): fullscreen geometric heuristic for niri"
   - `readonly property string focusedMonitorName` — nome do output focado (de `workspaces` onde `is_focused`), `""` se nenhum.
   - `function workspaceList(mon)` → `Array<Workspace>` ordenado por `idx`.
   - `function activeWorkspace(mon)` → `Workspace` ativo no monitor ou `null`.
-  - `readonly property string activeWorkspaceName` — nome do workspace ativo no monitor focado (deriva de `activeWorkspace(focusedMonitorName)`).
   - `property var fullscreenByMonitor` — **mapa reativo** `{mon: bool}` recomputado a cada atualização; bindings usam `Niri.fullscreenByMonitor[name] === true` (NÃO chamar função, senão não re-evalueta).
   - `function isFullscreen(mon)` — getter de leitura (não reativo; só para código imperativo).
   - `function requeryWindows()` → re-dispara a query `windows` (o stream já cobre workspaces; usado quando um evento de janela não traz payload completo).
@@ -220,11 +219,6 @@ Singleton {
                 return ws[i];
         }
         return null;
-    }
-
-    readonly property string activeWorkspaceName: {
-        var act = root.activeWorkspace(root.focusedMonitorName);
-        return act && act.name ? act.name : "";
     }
 
     /**
