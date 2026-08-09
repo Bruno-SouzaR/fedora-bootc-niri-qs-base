@@ -1,39 +1,36 @@
 # ==============================================================================
-# ESTÁGIO 1: Imagem Base Polida (Universal Blue Base 44)
+# ESTÁGIO 1: Imagem Base Polida sem DE (Universal Blue Base 44)
 # ==============================================================================
 FROM ghcr.io/ublue-os/base-main:44 AS base
 
 ENV INTERACTIVE=0
 
 # ==============================================================================
-# ESTÁGIO 2: Repositórios Essenciais (Niri, Ghostty e VSCodium)
+# ESTÁGIO 2: Repositórios COPR, Repositório VSCodium e Instalação de Pacotes
 # ==============================================================================
 
+# 1. Habilitar COPRs Necessários (Niri e Ghostty) e Repositório Oficial RPM do VSCodium
 RUN dnf install -y 'dnf5-command(copr)' && \
     dnf copr enable -y yalter/niri && \
     dnf copr enable -y scottames/ghostty && \
     rpm --import https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg && \
     printf "[gitlab.com_paulcarroty_vscodium_repo]\nname=download.vscodium.com\nbaseurl=https://download.vscodium.com/rpms/\nenabled=1\ngpgcheck=1\nrepo_gpgcheck=0\ngpgkey=https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg\nmetadata_expire=1h\n" > /etc/yum.repos.d/vscodium.repo
 
-# ==============================================================================
-# ESTÁGIO 3: Instalação Enxuta de Pacotes
-# ==============================================================================
-
+# 2. Instalação Consolidada dos Pacotes
 RUN dnf install -y \
     sddm \
+    sddm-wayland-plasma \
     qt6-qtdeclarative \
     qt6-qtwayland \
     qt6-qtshadertools \
     qt6-qt5compat \
     qt6-qtsvg \
-    qt6-gtkplatformtheme \
     niri \
     xwayland-satellite \
     quickshell \
     swww \
     matugen \
     brightnessctl \
-    xdg-desktop-portal-gtk \
     xdg-desktop-portal-gnome \
     bluez-tools \
     pipewire-pulseaudio \
@@ -73,10 +70,10 @@ RUN dnf install -y \
     rm -rf /var/cache/dnf/*
 
 # ==============================================================================
-# ESTÁGIO 4: Fontes, Zsh, Ícones e Defaults
+# ESTÁGIO 3: Configuração da JetBrains Mono Nerd Font, Zsh e Defaults
 # ==============================================================================
 
-# 1. JetBrains Mono Nerd Font
+# 1. Baixar, Instalar e Definir Permissões Globais da JetBrains Mono Nerd Font
 RUN mkdir -p /usr/share/fonts/JetBrainsMono && \
     curl -fLo /tmp/JetBrainsMono.zip https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip && \
     unzip -o /tmp/JetBrainsMono.zip -d /usr/share/fonts/JetBrainsMono/ && \
@@ -84,25 +81,21 @@ RUN mkdir -p /usr/share/fonts/JetBrainsMono && \
     rm -f /tmp/JetBrainsMono.zip && \
     fc-cache -f -v
 
-# 2. Temas/Plugins do Zsh Globais
+# 2. Clonar Temas e Plugins Adicionais do Zsh para /usr/share/zsh
 RUN mkdir -p /usr/share/zsh/plugins /usr/share/zsh/themes && \
     git clone --depth=1 https://github.com/romkatv/powerlevel10k.git /usr/share/zsh/themes/powerlevel10k && \
     git clone --depth=1 https://github.com/marlonrichert/zsh-autocomplete.git /usr/share/zsh/plugins/zsh-autocomplete
 
-# 3. Tema de Ícones WhiteSur (Dark Alternativo)
-RUN git clone --depth 1 https://github.com/vinceliuice/WhiteSur-icon-theme.git /tmp/WhiteSur-icon-theme && \
-    /tmp/WhiteSur-icon-theme/install.sh -a -d /usr/share/icons && \
-    rm -rf /tmp/WhiteSur-icon-theme
-
-# 4. Ajustar Shell Padrão para Zsh e Criar Pasta de Screenshots
+# 3. Alterar o shell padrão do sistema para Zsh e criar diretório do skel para screenshots
 RUN sed -i 's|SHELL=/bin/bash|SHELL=/bin/zsh|g' /etc/default/useradd && \
     mkdir -p /etc/skel/Pictures/Screenshots
 
 # ==============================================================================
-# ESTÁGIO 5: Copiando Configurações Locais e Ativando Serviços
+# ESTÁGIO 4: Copiando Configurações Locais e Ativando Serviços
 # ==============================================================================
 
+# Copia a árvore de configurações
 COPY system_files/ /
 
-RUN systemctl enable sddm.service power-profiles-daemon.service && \
-    systemctl set-default graphical.target
+# Habilita o SDDM e o Power Profiles Daemon como serviços do sistema
+RUN systemctl enable sddm.service power-profiles-daemon.service
