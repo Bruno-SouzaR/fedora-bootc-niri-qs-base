@@ -4,7 +4,6 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
-import Quickshell.Hyprland
 import "Singletons"
 
 /**
@@ -31,16 +30,8 @@ ShellRoot {
     property string openSurface: ""
     property string peekMon: ""
 
-    function refresh() {
-        Hyprland.refreshMonitors();
-        Hyprland.refreshWorkspaces();
-        Hyprland.refreshToplevels();
-    }
-
     Component.onCompleted: {
-        refresh();
         Devices.restore();
-        void GameMode.active;
     }
 
     /**
@@ -99,40 +90,13 @@ ShellRoot {
     }
 
     /**
-     * Only these raw events can change what the pill renders (per-monitor
-     * active workspace, minimized toplevels, monitor hotplug). Everything
-     * else (window drags, resizes, title spam) must not trigger the triple
-     * model refresh, which costs three Hyprland IPC round-trips.
-     */
-    readonly property var refreshEvents: ({
-        workspace: true, workspacev2: true,
-        createworkspace: true, createworkspacev2: true,
-        destroyworkspace: true, destroyworkspacev2: true,
-        moveworkspace: true, moveworkspacev2: true,
-        renameworkspace: true, activespecial: true,
-        focusedmon: true, focusedmonv2: true,
-        openwindow: true, closewindow: true,
-        movewindow: true, movewindowv2: true,
-        fullscreen: true,
-        monitoradded: true, monitoraddedv2: true, monitorremoved: true
-    })
-
-    Connections {
-        target: Hyprland
-        function onRawEvent(event) {
-            if (root.refreshEvents[event.name])
-                root.refresh();
-        }
-    }
-
-    /**
      * An empty monitor argument resolves to the focused monitor here, so the
      * keybind scripts skip their hyprctl+jq round trip and a surface open costs
      * one IPC call instead of three process spawns.
      */
     function toggleSurface(mon, surface) {
         if (!mon || mon.length === 0)
-            mon = Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : "";
+            mon = Niri.focusedMonitorName;
         if (root.openMon === mon && root.openSurface === surface) {
             root.close();
             return;
@@ -198,24 +162,6 @@ ShellRoot {
 
         /** Opens any surface by name, settings sub-pages included; dev and scripting door. */
         function page(mon: string, name: string): void { root.toggleSurface(mon, name); }
-
-        /**
-         * The two halves of the SUPER+M minimize toggle, driven by the
-         * minimize-toggle script which has already read the focused window. A
-         * desktop window drops into the minimized stash; a window already stashed
-         * comes back to the workspace it is handed, so the same key hides and
-         * restores. Both target the window by address so they act on the one the
-         * user pressed on, not whatever the compositor calls active afterwards.
-         */
-        function minimizeWindow(addr: string): void {
-            Hyprland.dispatch('hl.dsp.window.move({ workspace = "special:minimized", follow = false, window = "address:' + addr + '" })');
-        }
-        function restoreWindow(arg: string): void {
-            var p = arg.split("|");
-            if (p.length < 2 || p[0].length === 0)
-                return;
-            Hyprland.dispatch('hl.dsp.window.move({ workspace = ' + p[1] + ', window = "address:' + p[0] + '" })');
-        }
     }
 
     Variants {
@@ -264,17 +210,7 @@ ShellRoot {
              * client. The pill then retracts off the top edge and the whole
              * layer becomes click-through so fullscreen content owns the screen.
              */
-            readonly property bool monFullscreen: {
-                var mons = Hyprland.monitors.values;
-                for (var i = 0; i < mons.length; i++) {
-                    if (mons[i].name === modelData.name) {
-                        var ws = mons[i].activeWorkspace;
-                        var o = ws ? ws.lastIpcObject : null;
-                        return o ? !!o.hasfullscreen : false;
-                    }
-                }
-                return false;
-            }
+            readonly property bool monFullscreen: Niri.fullscreenByMonitor[modelData.name] === true
 
             onMonFullscreenChanged: if (monFullscreen) {
                 if (root.openMon === modelData.name) root.close();
