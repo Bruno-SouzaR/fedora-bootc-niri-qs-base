@@ -90,9 +90,8 @@ ShellRoot {
     }
 
     /**
-     * An empty monitor argument resolves to the focused monitor here, so the
-     * keybind scripts skip their hyprctl+jq round trip and a surface open costs
-     * one IPC call instead of three process spawns.
+     * An empty monitor argument resolves to the focused monitor here, so keybind
+     * scripts open a surface on the right screen with a single IPC call.
      */
     function toggleSurface(mon, surface) {
         if (!mon || mon.length === 0)
