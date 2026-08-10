@@ -16,9 +16,8 @@ import Quickshell.Io
  * two resolvers, each emitting `targetReady(token)` on a valid pick or
  * `targetAborted()` on cancel: `prepareScreen(name)` resolves synchronously to a
  * monitor connector name (`-w DP-1`, falling back to `-w screen`);
- * `prepareWindow()` feeds the Hyprland client rectangles to `slurp` for one
- * combined Window / Region pick — clicking a window snaps to it, dragging draws
- * a freeform region — and resolves to that `WxH+X+Y` geometry. Only after
+ * `prepareWindow()` runs a plain `slurp` region pick — dragging draws the
+ * freeform region — and resolves to that `WxH+X+Y` geometry. Only after
  * `targetReady` does the surface run its countdown and call `start(token)`, so
  * the order is pick → countdown → record. Audio uses gsr's device aliases (`default_output` for desktop,
  * `default_input` for the mic) so no device id is ever hardcoded; the surface's
@@ -219,11 +218,10 @@ Singleton {
     }
 
     /**
-     * Feed the Hyprland client rectangles to `slurp` so the user picks at
-     * leisure with nothing recording yet: clicking a window snaps to that
-     * window, dragging draws a freeform region (one combined Window / Region
-     * pick, like a screenshot tool). Announces the chosen `WxH+X+Y` geometry, or
-     * aborts on cancel / non-zero exit (the user pressed Escape).
+     * Run a plain `slurp` region pick so the user picks at leisure with
+     * nothing recording yet: dragging draws a freeform region, like a
+     * screenshot tool. Announces the chosen `WxH+X+Y` geometry, or aborts on
+     * cancel / non-zero exit (the user pressed Escape).
      */
     function prepareWindow() {
         if (busy)
@@ -330,15 +328,13 @@ Singleton {
     }
 
     /**
-     * Combined Window / Region picker: feeds each Hyprland client's current
-     * rectangle to `slurp`, so clicking a window snaps to its `WxH+X+Y` geometry
-     * while dragging draws a freeform region. The rectangle is captured
-     * statically, so a window moved or resized after the pick is not followed.
-     * Empty pick or non-zero exit (Escape) aborts.
+     * Region picker: runs a plain `slurp` pick, so the user drags a freeform
+     * region and its `WxH+X+Y` geometry is captured at pick time. Empty pick or
+     * non-zero exit (Escape) aborts.
      */
     Process {
         id: windowProc
-        command: ["sh", "-c", "hyprctl clients -j | jq -r '.[] | \"\\(.at[0]),\\(.at[1]) \\(.size[0])x\\(.size[1])\"' | slurp -f \"%wx%h+%x+%y\""]
+        command: ["slurp", "-f", "%wx%h+%x+%y"]
         stdout: StdioCollector {
             onStreamFinished: {
                 var geom = this.text.trim();
