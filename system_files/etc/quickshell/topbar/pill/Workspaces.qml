@@ -2,18 +2,16 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
-import Quickshell.Hyprland
 import "Singletons"
 
 /**
  * Workspace dots for one monitor. No numbers, no icons. Active one is a larger
  * filled vermillion dot; the rest are small and dim, brightening on hover.
- * Clicking a dot focuses that workspace via the Hyprland-lua dispatcher. Active
- * marker tracks the monitor's live active workspace name from the Hyprland
- * model.
+ * Clicking a dot focuses that workspace via the niri IPC. Active marker tracks
+ * the monitor's live active workspace idx from the Niri singleton.
  *
- * The dot range shows the workspaces Hyprland currently has on this monitor,
- * so every workspace present on the screen appears as a dot.
+ * The dot range shows the workspaces niri currently has on this monitor, so
+ * every workspace present on the screen appears as a dot.
  */
 Item {
     id: workspaces
@@ -25,34 +23,28 @@ Item {
     property real gap: 4 * s
 
     readonly property var range: {
-        var out = [];
+        var wss = Niri.workspaceList(screenName);
         var seen = ({});
-        var wss = Hyprland.workspaces.values;
+        var out = [];
         for (var i = 0; i < wss.length; i++) {
-            var w = wss[i];
-            if (w.id >= 1 && w.monitor && w.monitor.name === screenName && !seen[w.id]) {
-                seen[w.id] = true;
-                out.push(w.id);
+            var ws = wss[i];
+            if (ws.idx >= 1 && !seen[ws.idx]) {
+                seen[ws.idx] = true;
+                out.push(ws.idx);
             }
         }
-        var a = parseInt(activeName);
-        if (a >= 1 && !seen[a])
-            out.push(a);
-        out.sort(function (x, y) { return x - y; });
+        out.sort(function (a, b) { return a - b; });
         return out;
     }
 
-    readonly property string activeName: {
-        var mons = Hyprland.monitors.values;
-        for (var i = 0; i < mons.length; i++)
-            if (mons[i].name === screenName)
-                return mons[i].activeWorkspace ? mons[i].activeWorkspace.name : "";
-        return "";
+    readonly property int activeWs: {
+        var act = Niri.activeWorkspace(screenName);
+        return act ? act.idx : -1;
     }
 
     property int hoverIndex: -1
 
-    readonly property int activeIndex: range.indexOf(parseInt(activeName))
+    readonly property int activeIndex: range.indexOf(activeWs)
 
     /**
      * Centre x of a dot slot from target layout widths (active stick is wider).
@@ -67,7 +59,6 @@ Item {
     }
 
     readonly property point activeDotPoint: {
-        void workspaces.activeName;
         void workspaces.width;
         return Qt.point(slotCenterX(Math.max(0, activeIndex)), height / 2);
     }
@@ -91,7 +82,7 @@ Item {
                 required property int index
 
                 readonly property string wsName: String(modelData)
-                readonly property bool isActive: workspaces.activeName === wsName
+                readonly property bool isActive: workspaces.activeWs >= 0 && String(modelData) === String(workspaces.activeWs)
 
                 Layout.preferredWidth: slot.isActive ? workspaces.stickW : workspaces.dotW
                 Layout.preferredHeight: 22 * workspaces.s
@@ -116,7 +107,7 @@ Item {
                     anchors.bottomMargin: -8 * workspaces.s
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: Hyprland.dispatch('hl.dsp.focus({workspace="' + slot.wsName + '"})')
+                    onClicked: Niri.focusWorkspace(slot.wsName)
                     onContainsMouseChanged: {
                         if (containsMouse)
                             workspaces.hoverIndex = slot.index;
