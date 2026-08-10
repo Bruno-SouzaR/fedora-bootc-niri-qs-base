@@ -16,11 +16,9 @@ SettingsSurface {
     rows: [
         { item: appearanceRow, kind: "nav", surface: "appearance" },
         { item: lookRow, kind: "nav", surface: "look" },
-        { item: displayRow, kind: "nav", surface: "display" },
+        // display/keybinds/workspaces ROWS REMOVIDAS: surfaces Hyprland-only, seguem inertes no repo
         { item: inputRow, kind: "nav", surface: "input" },
         { item: animationRow, kind: "nav", surface: "animation" },
-        { item: keybindsRow, kind: "nav", surface: "keybinds" },
-        { item: workspacesRow, kind: "nav", surface: "workspaces" },
         { item: idleRow, kind: "nav", surface: "idlelock" },
         { item: updatesRow, kind: "nav", surface: "updates" }
     ]
@@ -72,23 +70,7 @@ SettingsSurface {
             }
         }
 
-        SettingsRow {
-            id: displayRow
-            surface: root
-            captionOnFocus: true
-            icon: "monitor"
-            name: "Display"
-            sub: "Resolution, refresh, scale"
-
-            GlyphIcon {
-                width: 16 * root.s
-                height: 16 * root.s
-                name: "chevron-right"
-                color: root.focusRowItem === displayRow ? Theme.cream : Theme.iconDim
-                stroke: 2.2
-            }
-        }
-
+        // display/keybinds/workspaces ROWS REMOVIDAS: surfaces Hyprland-only, seguem inertes no repo
         SettingsRow {
             id: inputRow
             surface: root
@@ -119,40 +101,6 @@ SettingsSurface {
                 height: 16 * root.s
                 name: "chevron-right"
                 color: root.focusRowItem === animationRow ? Theme.cream : Theme.iconDim
-                stroke: 2.2
-            }
-        }
-
-        SettingsRow {
-            id: keybindsRow
-            surface: root
-            captionOnFocus: true
-            icon: "keyboard"
-            name: "Keybinds"
-            sub: "Rebind, add, set commands"
-
-            GlyphIcon {
-                width: 16 * root.s
-                height: 16 * root.s
-                name: "chevron-right"
-                color: root.focusRowItem === keybindsRow ? Theme.cream : Theme.iconDim
-                stroke: 2.2
-            }
-        }
-
-        SettingsRow {
-            id: workspacesRow
-            surface: root
-            captionOnFocus: true
-            icon: "layers"
-            name: "Workspaces"
-            sub: "Special spaces and their keys"
-
-            GlyphIcon {
-                width: 16 * root.s
-                height: 16 * root.s
-                name: "chevron-right"
-                color: root.focusRowItem === workspacesRow ? Theme.cream : Theme.iconDim
                 stroke: 2.2
             }
         }
