@@ -222,12 +222,12 @@ ShellRoot {
 
             anchors { top: true; left: true; right: true; bottom: true }
 
-            mask: pillHidden ? hiddenStripRegion : (modal ? fullRegion : pillRegion)
+            mask: pillHidden ? hiddenStripRegion : (modal ? fullRegion : revealRegion)
             Region {
                 id: hiddenStripRegion
-                y: -4 * s
+                y: 0
                 width: overlay.width
-                height: 7 * s
+                height: 14 * s
             }
             Region {
                 id: pillRegion
@@ -236,6 +236,20 @@ ShellRoot {
                 y: pill.y
                 width: baseW + pill.inputPadRight
                 height: Math.max(pill.height, pill.targetH)
+            }
+            Region {
+                id: revealRegion
+                Region {
+                    y: 0
+                    width: overlay.width
+                    height: 14 * s
+                }
+                Region {
+                    x: pillRegion.x
+                    y: pillRegion.y
+                    width: pillRegion.width
+                    height: pillRegion.height
+                }
             }
             Region {
                 id: fullRegion
