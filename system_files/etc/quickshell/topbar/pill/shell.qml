@@ -57,12 +57,6 @@ ShellRoot {
             + "Ricelin 0 '' 'Ricelin updated' \"$b\" '[]' '{}' 5000 >/dev/null 2>&1"]
     }
 
-    Binding {
-        target: Notifs
-        property: "dnd"
-        value: Flags.dnd
-    }
-
     PanelWindow {
         id: inhibitWin
         visible: Flags.keepAwake
