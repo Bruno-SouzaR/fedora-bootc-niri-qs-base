@@ -984,3 +984,18 @@ Sem commit; reportar o resultado ao usuário.
 - Consistência de tipos: `Niri.requeryWindows` usado dentro do Niri (Task 2) nos eventos `Window*` que não trazem payload completo; shell não re-queries (o stream empurra tudo) — Task 3 só lê props reativas; `pillHidden` nome consistente (Task 5); `workspaceList/activeWorkspace/isFullscreen/focusWorkspace/focusWindow/quit` idênticos em todas as tasks.
 - Flag confirmada: `action quit --skip-confirmation` e `focus-workspace <idx>` (FromStr: inteiro→Index, senão Name; NÃO aceita id) — consistente com `activeIndex`/`wsName` em Workspaces (idx, não id).
 - `outputs` em Niri.qml é populado uma vez no connect pela query `niri msg --json outputs` (anexado em Task 2); não há evento de outputs no stream, e a heurística só precisa de `output.logical`. Hotplug de monitor não re-popula `outputs` neste escopo — delay aceito (a heurística só degrada para "não-fullscreen", e workspaces/windows do stream continuam frescos). Melhorar (re-query outputs no stream de eventos) fica como follow-up se necessário.
+---
+
+## Apêndice — follow-up pós Task 13 (decisão do usuário, 2026-08-09)
+
+O grep residual encontrou 2 ocorrências fora da lista esperada; decisão: resolver agora.
+
+1. **ScreenRec.qml picker** — `hyprctl clients -j | jq | slurp` → **slurp puro**
+   (`["slurp", "-f", "%wx%h+%x+%y"]`). O snap-de-janela foi DROPADO: niri não expõe
+   geometria de janelas tiled via IPC (`tile_pos_in_workspace_view` é null para tiled —
+   upstream issues #2381/#4166). Commit `31377a3`.
+2. **shell.qml comment (94)** — texto anacrônico do `toggleSurface` atualizado para a
+   semântica Niri (1 IPC call). Commit `94ef572`.
+
+Remanescentes intencionais (follow-ups futuros): AnimationSurface/Appearance/Display/
+IdleLock/Input/Keybinds/Look/NightLight + `lib/setInput.js` + Players.qml (import morto).
