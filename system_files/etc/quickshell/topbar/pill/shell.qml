@@ -175,7 +175,7 @@ ShellRoot {
             screen: modelData
             color: "transparent"
             exclusionMode: ExclusionMode.Normal
-            exclusiveZone: collapsed ? 0 : reservedH
+            exclusiveZone: (Flags.autoHide || collapsed) ? 0 : reservedH
             aboveWindows: true
 
             anchors { top: true; left: true; right: true }
