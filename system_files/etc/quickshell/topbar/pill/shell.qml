@@ -204,7 +204,10 @@ ShellRoot {
              * layer becomes click-through so fullscreen content owns the screen.
              */
             readonly property bool monFullscreen: Niri.fullscreenByMonitor[modelData.name] === true
-            readonly property bool revealWant: pill.hovered || pill.held || surfaceOpen || pill.quickChoosing || root.peekMon === modelData.name
+            readonly property bool revealWant: pill.hovered || pill.held || surfaceOpen || pill.quickChoosing
+                || root.peekMon === modelData.name
+                || pill.osdActive
+                || (pill.toastActive && Niri.focusedMonitorName === modelData.name)
             readonly property bool pillHidden: !revealWant && (Flags.autoHide || (Flags.smartHide && monFullscreen))
 
             onPillHiddenChanged: if (pillHidden) {
