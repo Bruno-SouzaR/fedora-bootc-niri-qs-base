@@ -148,7 +148,6 @@ ShellRoot {
                 ScreenRec.quickChoosing = true;
             }
         }
-        function gameMode(mon: string): void { Flags.gameMode = !Flags.gameMode; }
         function sysmon(mon: string): void { root.toggleSurface(mon, "sysmon"); }
         function system(mon: string): void { root.toggleSurface(mon, "sysmon"); }
         function clipboard(mon: string): void { root.toggleSurface(mon, "clipboard"); }
@@ -177,7 +176,6 @@ ShellRoot {
             /** Trimming the reserved band below the pill's bottom lets windows climb, so App gap sets the pill-to-window air without touching the desktop gaps_out. */
             readonly property real reservedH: Math.max(0, restHeight + topGap - 12 * (1 - Flags.appGap) * s)
 
-            readonly property real gameBarH: 34 * s
             readonly property bool collapsed: root.openMon !== modelData.name && root.peekMon !== modelData.name
                 && (Flags.autoHide || (Flags.smartHide && Niri.fullscreenByMonitor[modelData.name] === true))
 
@@ -356,7 +354,7 @@ ShellRoot {
                 Pill {
                     id: pill
                     anchors.top: parent.top
-                    anchors.topMargin: pill.mode === "game" ? 0 : overlay.topGap
+                    anchors.topMargin: overlay.topGap
                     anchors.horizontalCenter: parent.horizontalCenter
 
                     Behavior on anchors.topMargin {
