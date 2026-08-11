@@ -65,7 +65,19 @@ SettingsSurface {
 
     function apply() {
         confWriter.setText(buildConf());
-        restartProc.running = true;
+        restartTimer.restart();
+    }
+
+    /**
+     * Restart is debounced so rapid seg picks while dragging collapse into one
+     * unit restart, and delayed a beat so the async FileView write settles and
+     * swayidle reads the fresh config instead of racing the old file.
+     */
+    Timer {
+        id: restartTimer
+        interval: 260
+        repeat: false
+        onTriggered: restartProc.running = true
     }
 
     FileView {

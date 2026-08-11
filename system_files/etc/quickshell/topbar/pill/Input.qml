@@ -127,7 +127,7 @@ SettingsSurface {
         var out = "// Gerado pela pill — edite pela surface Input.\n";
         out += "input {\n";
         out += "    mouse {\n";
-        out += "        accel-speed " + root.sensitivity + "\n";
+        out += "        accel-speed " + (Math.round(root.sensitivity * 1000) / 1000) + "\n";
         out += "        accel-profile \"" + root.accelProfile + "\"\n";
         out += "    }\n";
         out += "    keyboard {\n";
