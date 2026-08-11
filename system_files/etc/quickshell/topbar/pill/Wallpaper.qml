@@ -2,7 +2,6 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Effects
-import QtMultimedia
 import Quickshell
 import Quickshell.Io
 import Quickshell.Widgets
@@ -44,18 +43,6 @@ PillSurface {
     property bool editingDir: false
 
     /**
-     * Kind filter shared by both views: "all", "still" or "motion". Locally it
-     * splits the snapshot by extension (gif and video files count as motion);
-     * in search mode it steers the DDG request (gif type filter) so the chips
-     * act as one control everywhere.
-     */
-    property string kindFilter: "all"
-
-    function isMotion(path) {
-        return /\.(gif|mp4|webm|mkv|mov)$/i.test(path);
-    }
-
-    /**
      * Miniature of the physical monitor arrangement, shown on the focused tile
      * when more than one screen is connected. Logical rects are fitted into a
      * small box, keeping their real positions; clicking one sends the pick to
@@ -85,29 +72,7 @@ PillSurface {
         return { w: (maxX - minX) * k, h: (maxY - minY) * k, tiles: tiles };
     }
 
-    readonly property var localItems: {
-        if (kindFilter === "all")
-            return Walls.entries;
-        var wantMotion = kindFilter === "motion";
-        var out = [];
-        for (var i = 0; i < Walls.entries.length; i++)
-            if (isMotion(Walls.entries[i].path) === wantMotion)
-                out.push(Walls.entries[i]);
-        return out;
-    }
-
-    /**
-     * Re-centre after a filter switch. Deferred with callLater because this
-     * handler fires before dependent bindings refresh, so a direct call would
-     * still see the previous filter's list and park the strip on an index the
-     * new list does not have.
-     */
-    onKindFilterChanged: {
-        if (searching && query.length > 0)
-            debounce.restart();
-        else
-            Qt.callLater(centerOnCurrent);
-    }
+    readonly property var localItems: Walls.entries
 
     /**
      * Active model and its select handler. The strip, navigation and empty
@@ -115,7 +80,7 @@ PillSurface {
      * a populated query in search mode shows remote results, anything else the
      * local snapshot.
      */
-    readonly property var items: (searching && query.length > 0) ? ddgResults : localItems
+    readonly property var items: (searching && query.length > 0) ? ddgResults : Walls.entries
     readonly property int itemCount: items.length
 
     /**
@@ -128,24 +93,9 @@ PillSurface {
     /** Output name under the pointer in the focused tile's screen picker, "" when none. */
     property string monHover: ""
 
-    /**
-     * Preview arming: playback and the dimension probe only start once the
-     * focus has rested for a beat, so wheeling through the strip never churns
-     * decoders or process spawns per step.
-     */
-    property bool previewArmed: true
-
     onFocusIndexChanged: {
         hintShown = false;
         hintDwell.restart();
-        previewArmed = false;
-        previewArm.restart();
-    }
-
-    Timer {
-        id: previewArm
-        interval: 300
-        onTriggered: root.previewArmed = true
     }
 
     onItemsChanged: if (focusIndex >= itemCount) focusIndex = Math.max(0, itemCount - 1);
@@ -273,103 +223,7 @@ PillSurface {
         }
     }
 
-    readonly property string searchScript: Quickshell.env("HOME") + "/.config/hypr/scripts/wallpaper-search.sh"
-
-    /**
-     * Remote video previews. Qt's MediaPlayer chokes on streaming https, so
-     * the focused result's preview clip (small webm) is pulled into /tmp by
-     * curl and played from disk. The fetch is debounced behind the focus and
-     * keyed by url hash, so paging back to a seen result replays instantly and
-     * a stale download can never attach to the wrong tile.
-     */
-    property string previewFile: ""
-
-    readonly property string focusedPreviewUrl: {
-        if (focusIndex < 0 || focusIndex >= itemCount)
-            return "";
-        var e = items[focusIndex];
-        return (e && e.preview !== undefined) ? e.preview : "";
-    }
-
-    onFocusedPreviewUrlChanged: {
-        previewFile = "";
-        prevFetch.running = false;
-        prevDebounce.restart();
-    }
-
-    Timer {
-        id: prevDebounce
-        interval: 250
-        onTriggered: {
-            if (root.focusedPreviewUrl === "")
-                return;
-            prevFetch.url = root.focusedPreviewUrl;
-            prevFetch.command = ["bash", "-c",
-                "f=\"/tmp/ricelin-wp-preview-$(printf %s \"$1\" | md5sum | cut -d' ' -f1).webm\"; [ -s \"$f\" ] || curl -fsL --max-time 25 -A 'Mozilla/5.0' -o \"$f\" \"$1\" || { rm -f \"$f\"; exit 1; }; printf %s \"$f\"",
-                "_", root.focusedPreviewUrl];
-            prevFetch.running = true;
-        }
-    }
-
-    Process {
-        id: prevFetch
-        property string url: ""
-        stdout: StdioCollector {
-            onStreamFinished: {
-                if (this.text.length && prevFetch.url === root.focusedPreviewUrl)
-                    root.previewFile = this.text;
-            }
-        }
-    }
-
-    /**
-     * Local resolution badge. Dimensions are probed lazily for the focused
-     * tile only (ffprobe reads images and videos alike) and cached per path,
-     * so browsing stays cheap and revisits are instant.
-     */
-    property var dimsCache: ({})
-
-    readonly property string focusedLocalPath: {
-        if (searching && query.length > 0)
-            return "";
-        if (focusIndex < 0 || focusIndex >= itemCount)
-            return "";
-        var e = items[focusIndex];
-        return (e && e.path !== undefined) ? e.path : "";
-    }
-
-    onFocusedLocalPathChanged: dimsDebounce.restart()
-
-    Timer {
-        id: dimsDebounce
-        interval: 320
-        onTriggered: {
-            var p = root.focusedLocalPath;
-            if (p === "" || root.dimsCache[p] !== undefined)
-                return;
-            dimsProc.running = false;
-            dimsProc.path = p;
-            dimsProc.command = ["sh", "-c",
-                "ffprobe -v quiet -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 \"$1\" | head -1",
-                "_", p];
-            dimsProc.running = true;
-        }
-    }
-
-    Process {
-        id: dimsProc
-        property string path: ""
-        stdout: StdioCollector {
-            onStreamFinished: {
-                var t = this.text.trim();
-                if (t.length && dimsProc.path.length) {
-                    var c = Object.assign({}, root.dimsCache);
-                    c[dimsProc.path] = t;
-                    root.dimsCache = c;
-                }
-            }
-        }
-    }
+    readonly property string searchScript: "/etc/niri/scripts/wallpaper-search.sh"
 
     Timer {
         id: debounce
@@ -379,7 +233,7 @@ PillSurface {
                 root.ddgResults = [];
                 return;
             }
-            searchProc.command = ["bash", root.searchScript, "search", root.query, root.kindFilter];
+            searchProc.command = ["bash", root.searchScript, "search", root.query];
             searchProc.running = true;
         }
     }
@@ -431,7 +285,7 @@ PillSurface {
         anchors.left: parent.left
         anchors.leftMargin: 20 * root.s
         anchors.right: parent.right
-        anchors.rightMargin: filterRow.width + 30 * root.s
+        anchors.rightMargin: 20 * root.s
         s: root.s
         kanji: "探"
         placeholder: "Search wallpapers"
@@ -454,79 +308,6 @@ PillSurface {
         }
     }
 
-    component FilterChip: Item {
-        id: fchip
-
-        property string kind: ""
-        property string label: ""
-
-        width: fchipText.implicitWidth + 17 * root.s
-        height: parent ? parent.height : 0
-
-        Text {
-            id: fchipText
-            anchors.centerIn: parent
-            text: fchip.label
-            color: root.kindFilter === fchip.kind ? Theme.cream : Theme.faint
-            font.family: Theme.font
-            font.pixelSize: 9.5 * root.s
-            font.weight: Font.DemiBold
-            font.letterSpacing: 0.4 * root.s
-            Behavior on color { ColorAnimation { duration: Motion.fast } }
-        }
-
-        MouseArea {
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            onClicked: root.kindFilter = fchip.kind
-        }
-    }
-
-    /**
-     * Kind filter as one inset capsule with a sliding highlight, matching the
-     * pill's segmented controls instead of three loose outlined chips.
-     */
-    Rectangle {
-        id: filterRow
-        anchors.top: parent.top
-        anchors.topMargin: 9 * root.s
-        anchors.right: parent.right
-        anchors.rightMargin: 14 * root.s
-        z: 40
-        width: segRow.implicitWidth + 6 * root.s
-        height: 22 * root.s
-        radius: height / 2
-        color: Theme.frameBg
-        border.width: 1
-        border.color: Theme.hairSoft
-
-        readonly property Item currentChip: root.kindFilter === "all" ? chipAll : (root.kindFilter === "still" ? chipStill : chipLive)
-
-        Rectangle {
-            anchors.verticalCenter: parent.verticalCenter
-            height: parent.height - 4 * root.s
-            radius: height / 2
-            x: segRow.x + filterRow.currentChip.x + 2 * root.s
-            width: filterRow.currentChip.width - 4 * root.s
-            color: Qt.alpha(Theme.onGlow, 0.18)
-            border.width: 1
-            border.color: Qt.alpha(Theme.onGlow, 0.45)
-            Behavior on x { NumberAnimation { duration: Motion.standard; easing.type: Motion.easeStandard } }
-            Behavior on width { NumberAnimation { duration: Motion.standard; easing.type: Motion.easeStandard } }
-        }
-
-        Row {
-            id: segRow
-            anchors.left: parent.left
-            anchors.leftMargin: 3 * root.s
-            height: parent.height
-
-            FilterChip { id: chipAll; kind: "all"; label: "all" }
-            FilterChip { id: chipStill; kind: "still"; label: "still" }
-            FilterChip { id: chipLive; kind: "motion"; label: "live" }
-        }
-    }
-
     /**
      * Current wallpaper folder as a quiet header caption. A click swaps the
      * label for an inline path edit seeded from flags.json: Return commits the
@@ -539,8 +320,8 @@ PillSurface {
         anchors.topMargin: 6 * root.s
         anchors.left: parent.left
         anchors.leftMargin: 20 * root.s
-        anchors.right: filterRow.left
-        anchors.rightMargin: 12 * root.s
+        anchors.right: parent.right
+        anchors.rightMargin: 20 * root.s
         height: 30 * root.s
         visible: !root.searching
         z: 30
@@ -638,23 +419,16 @@ PillSurface {
             readonly property string thumbSource: remote ? thumb : ("file://" + thumb)
 
             /**
-             * Live preview gating: only the focused tile plays, and only once
-             * the strip has settled on it, so paging never spins up decoders.
-             * Gifs play in place (remote ones stream the full file), videos
-             * loop muted through the ffmpeg backend; everything else keeps the
-             * static thumb, which also stays underneath as the loading frame.
+             * Live gif preview: only the focused tile animates in place, so
+             * paging through the strip never spins up decoders. Everything
+             * else keeps the static thumb, which also stays underneath as the
+             * loading frame.
              */
             readonly property bool isGif: /\.gif(\?|$)/i.test(remote ? (modelData.image || "") : modelData.path)
-            readonly property string videoSource: remote
-                ? (focused && root.previewFile !== "" ? "file://" + root.previewFile : "")
-                : (/\.(mp4|webm|mkv|mov)$/i.test(modelData.path) ? "file://" + modelData.path : "")
-            readonly property bool showPreview: focused && root.previewArmed && ao < 0.5
+            readonly property bool showPreview: focused && ao < 0.5
             readonly property string resLabel: remote
                 ? (modelData.w > 0 ? modelData.w + "x" + modelData.h : "")
-                : (root.dimsCache[modelData.path] !== undefined ? root.dimsCache[modelData.path] : "")
-            readonly property bool motion: remote
-                ? (modelData.preview !== undefined || isGif)
-                : /\.(gif|mp4|webm|mkv|mov)$/i.test(modelData.path)
+                : ""
 
             readonly property real off: index - root.pos
             readonly property real ao: Math.abs(off)
@@ -730,28 +504,6 @@ PillSurface {
                     cache: false
                 }
 
-                Loader {
-                    anchors.fill: parent
-                    active: tile.showPreview && tile.videoSource !== ""
-
-                    sourceComponent: Item {
-                        VideoOutput {
-                            id: videoPreview
-                            anchors.fill: parent
-                            fillMode: VideoOutput.PreserveAspectCrop
-                            visible: vidPlayer.playbackState === MediaPlayer.PlayingState
-                        }
-
-                        MediaPlayer {
-                            id: vidPlayer
-                            videoOutput: videoPreview
-                            loops: MediaPlayer.Infinite
-                            source: tile.videoSource
-                            onMediaStatusChanged: if (mediaStatus === MediaPlayer.LoadedMedia) play()
-                        }
-                    }
-                }
-
                 Rectangle {
                     anchors.fill: parent
                     color: Qt.rgba(0, 0, 0, 1)
@@ -783,26 +535,6 @@ PillSurface {
                             GradientStop { position: 0.5; color: Theme.flameGlow }
                             GradientStop { position: 1.0; color: Qt.alpha(Theme.flameGlow, 0.0) }
                         }
-                    }
-                }
-
-                Rectangle {
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    anchors.margins: 5 * root.s
-                    visible: tile.motion
-                    width: motionText.implicitWidth + 9 * root.s
-                    height: motionText.implicitHeight + 4 * root.s
-                    radius: height / 2
-                    color: Qt.rgba(0, 0, 0, 0.55)
-
-                    Text {
-                        id: motionText
-                        anchors.centerIn: parent
-                        text: "▶"
-                        color: Theme.cream
-                        font.family: Theme.font
-                        font.pixelSize: 7.5 * root.s
                     }
                 }
 
@@ -964,10 +696,6 @@ PillSurface {
         text: {
             if (root.searching && root.query.length)
                 return "no results";
-            if (root.kindFilter === "motion")
-                return "no live wallpapers yet";
-            if (root.kindFilter === "still")
-                return "no still wallpapers";
             return "No wallpapers in " + Walls.wpDir;
         }
         color: Theme.faint

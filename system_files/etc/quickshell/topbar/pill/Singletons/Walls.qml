@@ -36,8 +36,8 @@ Singleton {
     readonly property string wpDir: Flags.wallpaperDir.length > 0 ? Flags.wallpaperDir
         : (resolvedDir.length > 0 ? resolvedDir : Quickshell.env("HOME") + "/Ricelin/wallpapers")
     readonly property string thumbDir: (Quickshell.env("XDG_CACHE_HOME") || (Quickshell.env("HOME") + "/.cache")) + "/ricelin-wp-thumbs/"
-    readonly property string thumbScript: Quickshell.env("HOME") + "/.config/hypr/scripts/wallpaper-thumbs.sh"
-    readonly property string setScript: Quickshell.env("HOME") + "/.config/hypr/scripts/wallpaper.sh"
+    readonly property string thumbScript: "/etc/niri/scripts/wallpaper-thumbs.sh"
+    readonly property string setScript: "/etc/niri/scripts/wallpaper.sh"
     readonly property string stateFile: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/ricelin-wallpaper"
     readonly property string dirStateFile: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/ricelin-wallpaper-dir"
 
@@ -79,7 +79,7 @@ Singleton {
     }
 
     /**
-     * wallpaper.sh blocks through the whole transition (awww wave, matugen,
+     * wallpaper.sh blocks through the whole apply (swaybg respawn, matugen,
      * reload), easily 1-2s; a pick landing in that window used to be silently
      * swallowed. Now the newest request is queued and replayed once the
      * running transition exits, so rapid iteration converges on the last pick.
@@ -126,7 +126,7 @@ Singleton {
 
     Process {
         id: listProc
-        command: ["sh", "-c", "find \"$1\" -type f \\( -iname '*.jpg' -o -iname '*.png' -o -iname '*.gif' -o -iname '*.webp' -o -iname '*.mp4' -o -iname '*.webm' -o -iname '*.mkv' -o -iname '*.mov' \\) -printf '%T@\\t%p\\n' | sort -rn", "_", root.wpDir]
+        command: ["sh", "-c", "find \"$1\" -type f \\( -iname '*.jpg' -o -iname '*.png' -o -iname '*.gif' -o -iname '*.webp' \\) -printf '%T@\\t%p\\n' | sort -rn", "_", root.wpDir]
         stdout: StdioCollector {
             onStreamFinished: {
                 var lines = this.text.split("\n");
