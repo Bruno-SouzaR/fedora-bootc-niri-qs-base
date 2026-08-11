@@ -1,0 +1,12 @@
+[Unit]
+Description=Sway idle daemon - autolock and screen blanking
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/swayidle -w
+Restart=on-failure
+
+[Install]
+WantedBy=graphical-session.target
