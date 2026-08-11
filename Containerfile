@@ -104,4 +104,4 @@ RUN sed -i 's|SHELL=/bin/bash|SHELL=/bin/zsh|g' /etc/default/useradd && \
 
 COPY system_files/ /
 
-RUN systemctl enable sddm.service power-profiles-daemon.service swayidle.service gammastep.service
+RUN systemctl enable sddm.service power-profiles-daemon.service
