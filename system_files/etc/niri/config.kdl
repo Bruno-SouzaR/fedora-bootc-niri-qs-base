@@ -27,7 +27,9 @@ environment {
 spawn-at-startup "xwayland-satellite"
 
 // Inicializações do sistema
-spawn-at-startup "swww-daemon"
+spawn-at-startup "/etc/niri/scripts/wallpaper.sh" "init"
+spawn-at-startup "systemctl" "--user" "start" "swayidle" "gammastep"
+spawn-at-startup "quickshell" "-c" "/etc/quickshell/topbar/lock/shell.qml"
 spawn-at-startup "/etc/niri/scripts/power-autoswitch.sh"
 spawn-at-startup "quickshell" "--path" "/etc/quickshell/topbar/pill"
 spawn-at-startup "quickshell" "--path" "/etc/quickshell/topbar/launcher"
@@ -160,7 +162,7 @@ binds {
     XF86KbdBrightnessDown  { spawn "noctalia" "msg" "kbd-backlight-down"; }
 
     // --- Bloqueio de Tela & Captura ---
-    Mod+Alt+L { spawn "sh" "-c" "quickshell -b qylock -c ~/.config/quickshell/qylock/main.qml"; }
+    Mod+Alt+L { spawn "/etc/niri/scripts/lock.sh"; }
 
     // Print Screen Nativo do Niri 
     Print { screenshot; }
