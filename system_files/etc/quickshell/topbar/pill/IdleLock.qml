@@ -6,14 +6,15 @@ import Quickshell.Io
 import "Singletons"
 
 /**
- * 錠 IDLE / LOCK sub-surface: the three idle timeouts that drive hypridle, each
+ * 錠 IDLE / LOCK sub-surface: the three idle events that drive swayidle, each
  * held in minutes (0 = off). Auto-lock runs the lock script, screen-off blanks
- * the display through DPMS, and suspend sleeps the machine. Any pick regenerates
- * the whole hypridle.conf from the current values and restarts hypridle, so the
- * change lands without a hand edit. Keep-awake in the mixer already inhibits the
- * Wayland idle notification, which pauses every listener while it is on, so this
- * surface never touches that wiring. Reached from the settings index and morphs
- * back to it on an empty click or the back chevron.
+ * the display through power-off-monitors, and suspend sleeps the machine. Any
+ * pick regenerates the whole swayidle config from the current values and
+ * restarts swayidle, so the change lands without a hand edit. Keep-awake in
+ * the mixer already inhibits the Wayland idle notification, which pauses every
+ * timeout while it is on, so this surface never touches that wiring. Reached
+ * from the settings index and morphs back to it on an empty click or the back
+ * chevron.
  */
 SettingsSurface {
     id: root
@@ -21,8 +22,8 @@ SettingsSurface {
     backSurface: "settings"
     implicitHeight: content.implicitHeight
 
-    readonly property string confPath: Quickshell.env("HOME") + "/.config/hypr/hypridle.conf"
-    readonly property string lockScript: Quickshell.env("HOME") + "/.config/hypr/scripts/lock.sh"
+    readonly property string confPath: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/swayidle/config"
+    readonly property string lockScript: "/etc/niri/scripts/lock.sh"
 
     readonly property var lockOptions: [
         { label: "Off", value: 0 }, { label: "1 min", value: 1 }, { label: "3 min", value: 3 },
@@ -43,38 +44,22 @@ SettingsSurface {
         { item: suspendRow, kind: "seg", vals: root.suspendOptions.map(function (o) { return o.value; }), get: function () { return Flags.idleSuspendMin; }, set: function (v) { Flags.idleSuspendMin = v; root.apply(); } }
     ]
 
-    /**
-     * Builds the full hypridle.conf from the three flag values. The general block
-     * is always present; a listener block is appended only for each non-zero
-     * timeout, in the order lock, screen-off, suspend. Minutes are written out as
-     * seconds.
-     */
+    /** Builds ~/.config/swayidle/config from the three flag values. Each
+     * timeout only appears for its non-zero minute setting; the resume clause
+     * that re-powers the monitors rides on the screen-off timeout, and
+     * before-sleep always locks so a lid/suspend can't skip the gate. */
     function buildConf() {
-        var out = "general {\n"
-            + "    lock_cmd = " + root.lockScript + "\n"
-            + "    before_sleep_cmd = loginctl lock-session\n"
-            + "    after_sleep_cmd = hyprctl dispatch dpms on\n"
-            + "}\n";
-
+        var out = "";
         if (Flags.idleLockMin > 0)
-            out += "\nlistener {\n"
-                + "    timeout = " + (Flags.idleLockMin * 60) + "\n"
-                + "    on-timeout = " + root.lockScript + "\n"
-                + "}\n";
-
+            out += "timeout " + (Flags.idleLockMin * 60) + " " + root.lockScript + "\n";
         if (Flags.idleScreenOffMin > 0)
-            out += "\nlistener {\n"
-                + "    timeout = " + (Flags.idleScreenOffMin * 60) + "\n"
-                + "    on-timeout = hyprctl dispatch dpms off\n"
-                + "    on-resume = hyprctl dispatch dpms on\n"
-                + "}\n";
-
+            out += "timeout " + (Flags.idleScreenOffMin * 60)
+                + " niri msg action power-off-monitors"
+                + " resume niri msg action power-on-monitors\n";
         if (Flags.idleSuspendMin > 0)
-            out += "\nlistener {\n"
-                + "    timeout = " + (Flags.idleSuspendMin * 60) + "\n"
-                + "    on-timeout = systemctl suspend\n"
-                + "}\n";
-
+            out += "timeout " + (Flags.idleSuspendMin * 60) + " systemctl suspend\n";
+        if (Flags.idleLockMin > 0)
+            out += "before-sleep " + root.lockScript + "\n";
         return out;
     }
 
@@ -92,7 +77,7 @@ SettingsSurface {
 
     Process {
         id: restartProc
-        command: ["systemctl", "--user", "restart", "hypridle"]
+        command: ["systemctl", "--user", "restart", "swayidle"]
     }
 
     /**
