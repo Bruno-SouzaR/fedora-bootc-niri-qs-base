@@ -48,15 +48,13 @@ Item {
     readonly property bool recorderOpen: surface === "recorder"
     readonly property bool sysmonOpen: surface === "sysmon"
     readonly property bool appearanceOpen: surface === "appearance"
-    readonly property bool updatesOpen: surface === "updates"
     readonly property bool displayOpen: surface === "display"
     readonly property bool inputOpen: surface === "input"
-    readonly property bool lookOpen: surface === "look"
     readonly property bool idlelockOpen: surface === "idlelock"
-    readonly property bool animationOpen: surface === "animation"
+    readonly property bool nightlightOpen: surface === "nightlight"
     readonly property bool fontpickerOpen: surface === "fontpicker"
-    readonly property bool settingsLike: settingsOpen || appearanceOpen || updatesOpen
-        || lookOpen || inputOpen || displayOpen || animationOpen || idlelockOpen || fontpickerOpen
+    readonly property bool settingsLike: settingsOpen || appearanceOpen
+        || inputOpen || displayOpen || idlelockOpen || nightlightOpen || fontpickerOpen
     readonly property bool hasMedia: Players.list.length > 0
 
     readonly property var netDevices: (typeof Networking !== "undefined" && Networking && Networking.devices) ? Networking.devices.values : []
@@ -86,14 +84,6 @@ Item {
     }
 
     readonly property bool expanded: surfaceOpen || held || hoverLatch
-
-    /**
-     * True while the open surface is waiting on an external auth dialog (the
-     * updater's pkexec password prompt). The shell drops its modal grab for this
-     * so the polkit window underneath is clickable and typeable, instead of the
-     * backdrop swallowing the reach for it and dismissing the whole pill.
-     */
-    readonly property bool authPending: updatesOpen && ldUpdates.item !== null && ldUpdates.item.applying
 
     readonly property bool toastActive: Notifs.popups.length > 0
     readonly property bool osdActive: osd.flashing
@@ -133,12 +123,9 @@ Item {
     readonly property real recorderW: 384 * s
     readonly property real sysmonW: 392 * s
     readonly property real appearanceW: 392 * s
-    readonly property real updatesW: 360 * s
     readonly property real displayW: 392 * s
     readonly property real inputW: 392 * s
-    readonly property real lookW: 392 * s
     readonly property real idlelockW: 392 * s
-    readonly property real animationW: 392 * s
     readonly property real fontpickerW: 360 * s
     readonly property real toastW: 342 * s
     readonly property real quickChooseW: 344 * s
@@ -191,12 +178,10 @@ Item {
         recorder:  { size: () => Qt.size(recorderW, surfaceItem(ldRecorder).implicitHeight + 33 * s), ame: () => surfaceItem(ldRecorder) },
         sysmon:    { size: () => Qt.size(sysmonW, surfaceItem(ldSysmon).implicitHeight + 33 * s), ame: () => surfaceItem(ldSysmon) },
         appearance: { size: () => Qt.size(appearanceW, surfaceItem(ldAppearance).implicitHeight + 29 * s), ame: () => surfaceItem(ldAppearance) },
-        updates:    { size: () => Qt.size(updatesW, surfaceItem(ldUpdates).implicitHeight + 29 * s), ame: () => surfaceItem(ldUpdates) },
         display:    { size: () => Qt.size(displayW, surfaceItem(ldDisplay).implicitHeight + 29 * s), ame: () => surfaceItem(ldDisplay) },
         input:      { size: () => Qt.size(inputW, surfaceItem(ldInput).implicitHeight + 29 * s), ame: () => surfaceItem(ldInput) },
-        look:       { size: () => Qt.size(lookW, surfaceItem(ldLook).implicitHeight + 29 * s), ame: () => surfaceItem(ldLook) },
         idlelock:   { size: () => Qt.size(idlelockW, surfaceItem(ldIdlelock).implicitHeight + 29 * s), ame: () => surfaceItem(ldIdlelock) },
-        animation:  { size: () => Qt.size(animationW, surfaceItem(ldAnimation).implicitHeight + 29 * s), ame: () => surfaceItem(ldAnimation) },
+        nightlight: { size: () => Qt.size(idlelockW, surfaceItem(ldNightlight).implicitHeight + 29 * s), ame: () => surfaceItem(ldNightlight) },
         fontpicker: { size: () => Qt.size(fontpickerW, surfaceItem(ldFontpicker).implicitHeight + 29 * s), ame: () => surfaceItem(ldFontpicker) }
     })
 
@@ -254,16 +239,14 @@ Item {
             return ldSettings.item;
         if (pill.appearanceOpen)
             return ldAppearance.item;
-        if (pill.lookOpen)
-            return ldLook.item;
         if (pill.inputOpen)
             return ldInput.item;
         if (pill.displayOpen)
             return ldDisplay.item;
-        if (pill.animationOpen)
-            return ldAnimation.item;
         if (pill.idlelockOpen)
             return ldIdlelock.item;
+        if (pill.nightlightOpen)
+            return ldNightlight.item;
         if (pill.fontpickerOpen)
             return ldFontpicker.item;
         return null;
@@ -368,7 +351,7 @@ Item {
             pill.requestSurface("appearance");
             return;
         }
-        if (pill.appearanceOpen || pill.updatesOpen || pill.displayOpen || pill.inputOpen || pill.lookOpen || pill.idlelockOpen || pill.animationOpen) {
+        if (pill.appearanceOpen || pill.displayOpen || pill.inputOpen || pill.idlelockOpen || pill.nightlightOpen) {
             pill.requestSurface("settings");
             return;
         }
@@ -808,7 +791,7 @@ Item {
         pill.installLine = "";
         pill.installProto = "";
         pill.installPct = "";
-        installProc.command = ["bash", Quickshell.env("HOME") + "/.config/hypr/scripts/app-install.sh", "install", next];
+        installProc.command = ["bash", "/etc/niri/scripts/app-install.sh", "install", next];
         installProc.running = true;
     }
 
@@ -1827,19 +1810,6 @@ Item {
     }
 
     Loader {
-        id: ldUpdates
-        active: false
-        anchors.fill: parent
-        sourceComponent: Updates {
-            s: pill.s
-            open: pill.updatesOpen
-            morphCloseness: pill.morphCloseness
-            onRequestClose: pill.requestClose()
-            onRequestSurface: (name) => pill.requestSurface(name)
-        }
-    }
-
-    Loader {
         id: ldDisplay
         active: false
         anchors.fill: parent
@@ -1866,19 +1836,6 @@ Item {
     }
 
     Loader {
-        id: ldLook
-        active: false
-        anchors.fill: parent
-        sourceComponent: Look {
-            s: pill.s
-            open: pill.lookOpen
-            morphCloseness: pill.morphCloseness
-            onRequestClose: pill.requestClose()
-            onRequestSurface: (name) => pill.requestSurface(name)
-        }
-    }
-
-    Loader {
         id: ldIdlelock
         active: false
         anchors.fill: parent
@@ -1892,12 +1849,12 @@ Item {
     }
 
     Loader {
-        id: ldAnimation
+        id: ldNightlight
         active: false
         anchors.fill: parent
-        sourceComponent: AnimationSurface {
+        sourceComponent: NightLightSurface {
             s: pill.s
-            open: pill.animationOpen
+            open: pill.nightlightOpen
             morphCloseness: pill.morphCloseness
             onRequestClose: pill.requestClose()
             onRequestSurface: (name) => pill.requestSurface(name)
