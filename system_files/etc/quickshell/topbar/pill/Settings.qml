@@ -15,12 +15,10 @@ SettingsSurface {
 
     rows: [
         { item: appearanceRow, kind: "nav", surface: "appearance" },
-        { item: lookRow, kind: "nav", surface: "look" },
         // display/keybinds/workspaces ROWS REMOVIDAS: surfaces Hyprland-only, seguem inertes no repo
         { item: inputRow, kind: "nav", surface: "input" },
-        { item: animationRow, kind: "nav", surface: "animation" },
         { item: idleRow, kind: "nav", surface: "idlelock" },
-        { item: updatesRow, kind: "nav", surface: "updates" }
+        { item: nightRow, kind: "nav", surface: "nightlight" }
     ]
 
     Column {
@@ -53,23 +51,6 @@ SettingsSurface {
             }
         }
 
-        SettingsRow {
-            id: lookRow
-            surface: root
-            captionOnFocus: true
-            icon: "app-window"
-            name: "Look"
-            sub: "Gaps, rounding, blur, opacity"
-
-            GlyphIcon {
-                width: 16 * root.s
-                height: 16 * root.s
-                name: "chevron-right"
-                color: root.focusRowItem === lookRow ? Theme.cream : Theme.iconDim
-                stroke: 2.2
-            }
-        }
-
         // display/keybinds/workspaces ROWS REMOVIDAS: surfaces Hyprland-only, seguem inertes no repo
         SettingsRow {
             id: inputRow
@@ -84,23 +65,6 @@ SettingsSurface {
                 height: 16 * root.s
                 name: "chevron-right"
                 color: root.focusRowItem === inputRow ? Theme.cream : Theme.iconDim
-                stroke: 2.2
-            }
-        }
-
-        SettingsRow {
-            id: animationRow
-            surface: root
-            captionOnFocus: true
-            icon: "waves"
-            name: "Animation"
-            sub: "Speed, motion curve, enable"
-
-            GlyphIcon {
-                width: 16 * root.s
-                height: 16 * root.s
-                name: "chevron-right"
-                color: root.focusRowItem === animationRow ? Theme.cream : Theme.iconDim
                 stroke: 2.2
             }
         }
@@ -123,19 +87,19 @@ SettingsSurface {
         }
 
         SettingsRow {
-            id: updatesRow
+            id: nightRow
             surface: root
             captionOnFocus: true
-            icon: "download"
-            name: "Updates"
-            sub: "Version and check for updates"
+            icon: "moon"
+            name: "Night light"
+            sub: "Warmth, schedule"
             last: true
 
             GlyphIcon {
                 width: 16 * root.s
                 height: 16 * root.s
                 name: "chevron-right"
-                color: root.focusRowItem === updatesRow ? Theme.cream : Theme.iconDim
+                color: root.focusRowItem === nightRow ? Theme.cream : Theme.iconDim
                 stroke: 2.2
             }
         }
