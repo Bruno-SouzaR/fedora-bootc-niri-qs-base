@@ -72,8 +72,7 @@ SettingsSurface {
             r.push({ item: appGapRow, kind: "scrub", bump: function (d) { appGapScrub.bump(d); } });
             r.push({ item: pillOpRow, kind: "scrub", bump: function (d) { pillOpScrub.bump(d); } });
             r.push({ item: pillBlurRow, kind: "toggle", get: function () { return Flags.pillBlur; }, set: function (v) { Flags.pillBlur = v; root.applyPillBlur(v); } });
-            r.push({ item: autoHideRow, kind: "toggle", get: function () { return Flags.autoHide; }, set: function (v) { Flags.autoHide = v; } });
-            r.push({ item: smartHideRow, kind: "toggle", get: function () { return Flags.smartHide; }, set: function (v) { Flags.smartHide = v; } });
+            r.push({ item: hideModeRow, kind: "seg", vals: ["smart", "auto"], get: function () { return Flags.hideMode; }, set: function (v) { Flags.hideMode = v; } });
         }
         return r;
     }
@@ -885,24 +884,14 @@ SettingsSurface {
             }
 
             FieldRow {
-                id: autoHideRow
-                label: "Auto hide"
-                caption: "Hide the pill until the cursor touches the top edge"
-                LinkToggle {
+                id: hideModeRow
+                label: "Hide mode"
+                caption: "Smart hides only in real fullscreen; Auto hides until the cursor touches the top edge"
+                SettingsSeg {
                     s: root.s
-                    on: Flags.autoHide
-                    onToggled: Flags.autoHide = !Flags.autoHide
-                }
-            }
-
-            FieldRow {
-                id: smartHideRow
-                label: "Smart hide"
-                caption: "Hide only in real fullscreen. Keeps the pill under Mod+F tile maximize"
-                LinkToggle {
-                    s: root.s
-                    on: Flags.smartHide
-                    onToggled: Flags.smartHide = !Flags.smartHide
+                    options: [{ label: "Smart", value: "smart" }, { label: "Auto", value: "auto" }]
+                    value: Flags.hideMode
+                    onPicked: v => Flags.hideMode = v
                 }
             }
 
