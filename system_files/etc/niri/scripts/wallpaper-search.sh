@@ -2,97 +2,32 @@
 
 UA="Mozilla/5.0 (X11; Linux x86_64) Gecko/20100101 Firefox/126.0"
 
-search_moewalls() {
-    local query="${1:-}"
-    UA="$UA" python3 - "$query" <<'PYEOF'
-import concurrent.futures
-import json
-import os
-import re
-import sys
-import urllib.parse
-import urllib.request
-
-ua = os.environ.get("UA", "Mozilla/5.0")
-
-def fetch(url, timeout=10):
-    req = urllib.request.Request(url, headers={"User-Agent": ua, "Referer": "https://moewalls.com/"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return r.read().decode("utf-8", "ignore")
-
-def post_entry(url):
-    html = fetch(url)
-    prev = re.search(r'<source src="(/wp-content/uploads/preview/[^"]+)"', html)
-    token = re.search(r'id="moe-download"[^>]*data-url="([^"]+)"', html)
-    thumb = re.search(r'poster="([^"]+)"', html)
-    if not prev or not token:
-        return None
-    res = re.search(r'resolutions-(\d+)x(\d+)', html)
-    return {
-        "image": "https://go.moewalls.com/download.php?video=" + token.group(1),
-        "thumb": urllib.parse.urljoin("https://moewalls.com/", thumb.group(1)) if thumb else "",
-        "preview": urllib.parse.urljoin("https://moewalls.com/", prev.group(1)),
-        "w": int(res.group(1)) if res else 0,
-        "h": int(res.group(2)) if res else 0,
-    }
-
-try:
-    q = urllib.parse.quote(sys.argv[1])
-    page = fetch("https://moewalls.com/?s=" + q, timeout=12)
-    posts = []
-    for m in re.finditer(r'href="(https://moewalls\.com/[a-z0-9-]+/[a-z0-9-]+-live-wallpaper/)"', page):
-        if m.group(1) not in posts:
-            posts.append(m.group(1))
-    out = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
-        for entry in ex.map(post_entry, posts[:24]):
-            if entry:
-                out.append(entry)
-    print(json.dumps(out))
-except Exception:
-    print("[]")
-PYEOF
-}
-
 search() {
-    local query="${1:-}" kind="${2:-all}"
+    local query="${1:-}"
     [ -n "$query" ] || { printf '[]\n'; return 0; }
 
-    if [ "$kind" = "motion" ]; then
-        search_moewalls "$query"
-        return 0
-    fi
-
-    local q="$query" f=",,,"
-    case "$kind" in
-        still)  f="type:photo" ;;
-    esac
-
     local enc vqd raw
-    enc=$(jq -rn --arg q "$q" '$q|@uri') || { printf '[]\n'; return 0; }
+    enc=$(jq -rn --arg q "$query" '$q|@uri') || { printf '[]\n'; return 0; }
 
     vqd=$(curl -s --max-time 10 "https://duckduckgo.com/?q=${enc}&iax=images&ia=images" -A "$UA" \
         | grep -oP 'vqd=\\?"?\K[0-9-]+' | head -1)
     [ -n "$vqd" ] || { printf '[]\n'; return 0; }
 
     raw=$(curl -s --max-time 10 \
-        "https://duckduckgo.com/i.js?l=us-en&o=json&q=${enc}&vqd=${vqd}&f=${f}&p=-1" \
+        "https://duckduckgo.com/i.js?l=us-en&o=json&q=${enc}&vqd=${vqd}&f=type:photo&p=-1" \
         -A "$UA" -H "Referer: https://duckduckgo.com/")
     [ -n "$raw" ] || { printf '[]\n'; return 0; }
 
-    printf '%s' "$raw" | jq -c --arg kind "$kind" '
+    printf '%s' "$raw" | jq -c '
         (.results // [])
-        | if $kind == "motion" then map(select(.image // "" | test("\\.gif(\\?|$)"; "i")))
-          elif $kind == "still" then map(select(.image // "" | test("\\.gif(\\?|$)"; "i") | not))
-          else . end
-        | map({
+        | map(select(.image // "" | test("\\.gif(\\?|$)"; "i") | not))
+        | map(select(.image != null and .image != ""))
+        | .[0:60] | map({
             image: .image,
             thumb: (.thumbnail // .image),
             w: (.width // 0 | if . == null then 0 else . end),
             h: (.height // 0 | if . == null then 0 else . end)
           })
-        | map(select(.image != null and .image != ""))
-        | .[0:60]
     ' 2>/dev/null || printf '[]\n'
 }
 
@@ -154,7 +89,7 @@ download() {
 }
 
 case "${1:-}" in
-    search)   search "${2:-}" "${3:-all}" ;;
+    search)   search "${2:-}" ;;
     download) download "${2:-}" ;;
     *)        printf '[]\n'; exit 0 ;;
 esac
