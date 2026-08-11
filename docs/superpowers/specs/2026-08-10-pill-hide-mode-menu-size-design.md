@@ -110,29 +110,35 @@ Apply `surfaceS` in these three places (the only reads of menu geometry):
    `mixerH`, `launcherW/H`, `clipboardW/H`, `wallpaperW/H`, `powerW/H`, `mediaW`,
    `batteryW`, `wifiW`, `btW`, `settingsW`, `keybindsW`, `recorderW`, `sysmonW`,
    `appearanceW`, `updatesW`, `displayW`, `inputW`, `lookW`, `idlelockW`,
-   `animationW`, `fontpickerW`, `toastW`, `quickChooseW/H`, `quickCountW/H`,
-   `dragOverW/H`, `openCorner`.
+   `animationW`, `fontpickerW`.
 
-   Keep `* s` for the rest/hover geometry: `restW`, `restH`, `hoverPad`, `hoverW`,
-   `hoverH`, `restCorner`.
+   Keep `* s` for the rest/hover geometry and for the small transient pop-ups
+   (which are not "menus"): `restW`, `restH`, `hoverPad`, `hoverW`, `hoverH`,
+   `restCorner`, `toastW`, `quickChooseW/H`, `quickCountW/H`, `dragOverW/H`,
+   `openCorner` (corner radius stays uniform so small overlays keep a sane look).
 
 2. **`surfaces` size table** — replace the padding/fallback multipliers that use
    `s` with `surfaceS` (`36*s`, `32*s`, `26*s`, `29*s`, `33*s`, the calendar
    fallback `282*s`, and `93*Math.max(4, …)*s` in the mixer entry).
 
-3. **Surface loaders** — change each Loader's binding from `s: pill.s` to
-   `s: pill.surfaceS`, so the surface's internal content (fonts, rows, paddings)
-   grows with the geometry and stays sharp (multiplying `s` scales font sizes;
-   a `transform: Scale` would raster-blur and desync the input masks).
+3. **Surface loaders (menu surfaces only)** — change each `ld*` Loader that is
+   listed in the `surfaces` map from `s: pill.s` to `s: pill.surfaceS`, so the
+   surface's internal content (fonts, rows, paddings) grows with the geometry and
+   stays sharp (multiplying `s` scales font sizes; a `transform: Scale` would
+   raster-blur and desync the input masks). Do NOT touch the `s: pill.s` bindings
+   on `Ame`, the rest/hover rows, `Osd`, the toast loader or the quick-record /
+   drag overlays — those stay at base scale.
 
 Result: every open menu surface — geometry and content — is exactly 1.4x its former
 size. Rest pill, hover pill, OSD, toast tooltips that use their own `s` from the
 pill are untouched, and the window layout / global scale are untouched.
 
-**Note on OSD/toast:** the OSD volume/brightness toast (`Osd.qml`) and `Toast.qml`
-receive `s` from `Pill.qml` in their own loaders; the toast stays at base size.
-During implementation the OSD's `s` binding may be reviewed, but it is out of scope
-unless it visually breaks.
+**Note on the 40% scope:** only the open menu surfaces (the `surfaces` table and
+their width/height constants) grow. The OSD volume toast (`Osd.qml`), the
+notification `Toast.qml`, the quick-record chooser/countdown and the AppImage
+drag overlay keep their base size — they are transient pop-ups, not menu
+surfaces. During implementation, if a pop-up visually breaks against the larger
+pill body, it is reported but out of scope to rescale.
 
 **Verification:** no automated QML tests exist in this repo. Validation = the shell
 parses (`quickshell --path …` starts without QML errors), a surface open shows
