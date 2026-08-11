@@ -109,37 +109,46 @@ Item {
     readonly property bool quickChoosing: quickHere && ScreenRec.quickChoosing && !surfaceOpen
     readonly property bool quickCounting: quickHere && ScreenRec.counting && !recorderOpen
 
+    /**
+     * Menu-only scale: open surfaces render 40% larger than the shell-derived
+     * scale while the rest pill, hover pill, toasts and OSD keep `s`. The
+     * surfaces table, the menu width/height constants and each menu surface's
+     * `s` all multiply by this factor.
+     */
+    readonly property real menuScale: 1.4
+    readonly property real surfaceS: s * menuScale
+
     readonly property real restW: 160 * s
     readonly property real restH: 38 * s
     readonly property real hoverPad: 20 * s
     readonly property real hoverW: hoverRow.implicitWidth + 2 * hoverPad
     readonly property real hoverH: 58 * s
-    readonly property real mixerH: 214 * s
-    readonly property real launcherW: 360 * s
-    readonly property real launcherH: 332 * s
-    readonly property real clipboardW: 360 * s
-    readonly property real clipboardH: 332 * s
-    readonly property real wallpaperW: 720 * s
-    readonly property real wallpaperH: 172 * s
-    readonly property real powerW: 330 * s
-    readonly property real powerH: 150 * s
-    readonly property real mediaW: (Players.pickable.length > 1 ? 460 : 390) * s
-    readonly property real mediaH: 150 * s
-    readonly property real batteryW: 316 * s
-    readonly property real wifiW: 272 * s
-    readonly property real btW: 286 * s
-    readonly property real settingsW: 392 * s
-    readonly property real keybindsW: 460 * s
-    readonly property real recorderW: 384 * s
-    readonly property real sysmonW: 392 * s
-    readonly property real appearanceW: 392 * s
-    readonly property real updatesW: 360 * s
-    readonly property real displayW: 392 * s
-    readonly property real inputW: 392 * s
-    readonly property real lookW: 392 * s
-    readonly property real idlelockW: 392 * s
-    readonly property real animationW: 392 * s
-    readonly property real fontpickerW: 360 * s
+    readonly property real mixerH: 214 * surfaceS
+    readonly property real launcherW: 360 * surfaceS
+    readonly property real launcherH: 332 * surfaceS
+    readonly property real clipboardW: 360 * surfaceS
+    readonly property real clipboardH: 332 * surfaceS
+    readonly property real wallpaperW: 720 * surfaceS
+    readonly property real wallpaperH: 172 * surfaceS
+    readonly property real powerW: 330 * surfaceS
+    readonly property real powerH: 150 * surfaceS
+    readonly property real mediaW: (Players.pickable.length > 1 ? 460 : 390) * surfaceS
+    readonly property real mediaH: 150 * surfaceS
+    readonly property real batteryW: 316 * surfaceS
+    readonly property real wifiW: 272 * surfaceS
+    readonly property real btW: 286 * surfaceS
+    readonly property real settingsW: 392 * surfaceS
+    readonly property real keybindsW: 460 * surfaceS
+    readonly property real recorderW: 384 * surfaceS
+    readonly property real sysmonW: 392 * surfaceS
+    readonly property real appearanceW: 392 * surfaceS
+    readonly property real updatesW: 360 * surfaceS
+    readonly property real displayW: 392 * surfaceS
+    readonly property real inputW: 392 * surfaceS
+    readonly property real lookW: 392 * surfaceS
+    readonly property real idlelockW: 392 * surfaceS
+    readonly property real animationW: 392 * surfaceS
+    readonly property real fontpickerW: 360 * surfaceS
     readonly property real toastW: 342 * s
     readonly property real quickChooseW: 344 * s
     readonly property real quickChooseH: 76 * s
@@ -175,29 +184,29 @@ Item {
      * no parallel ternary chains to keep in lockstep.
      */
     readonly property var surfaces: ({
-        calendar:  { size: () => { const it = surfaceItem(ldCalendar); return Qt.size((it.implicitWidth > 0 ? it.implicitWidth : 282 * s) + 36 * s, it.implicitHeight + 32 * s); }, ame: () => surfaceItem(ldCalendar) },
+        calendar:  { size: () => { const it = surfaceItem(ldCalendar); return Qt.size((it.implicitWidth > 0 ? it.implicitWidth : 282 * surfaceS) + 36 * surfaceS, it.implicitHeight + 32 * surfaceS); }, ame: () => surfaceItem(ldCalendar) },
         launcher:  { size: () => { surfaceItem(ldLauncher); return Qt.size(launcherW, launcherH); }, ame: () => surfaceItem(ldLauncher) },
         clipboard: { size: () => { surfaceItem(ldClip); return Qt.size(clipboardW, clipboardH); }, ame: () => surfaceItem(ldClip) },
         wallpaper: { size: () => { surfaceItem(ldWall); return Qt.size(wallpaperW, wallpaperH); }, ame: () => null },
         power:     { size: () => { surfaceItem(ldPower); return Qt.size(powerW, powerH); }, ame: () => surfaceItem(ldPower) },
         media:     { size: () => { surfaceItem(ldMedia); return Qt.size(mediaW, mediaH); }, ame: () => surfaceItem(ldMedia) },
-        mixer:     { size: () => Qt.size(93 * Math.max(4, surfaceItem(ldMixer).faderCount) * s, mixerH), ame: () => surfaceItem(ldMixer) },
-        link:      { size: () => { const it = surfaceItem(ldLink); return Qt.size(it.desiredW, it.implicitHeight + 26 * s); }, ame: () => surfaceItem(ldLink) },
-        wifi:      { size: () => Qt.size(wifiW, surfaceItem(ldWifi).implicitHeight + 26 * s), ame: () => surfaceItem(ldWifi) },
-        bt:        { size: () => Qt.size(btW, surfaceItem(ldBt).implicitHeight + 26 * s), ame: () => surfaceItem(ldBt) },
-        battery:   { size: () => Qt.size(batteryW, surfaceItem(ldBattery).implicitHeight + 26 * s), ame: () => surfaceItem(ldBattery) },
-        settings:  { size: () => Qt.size(settingsW, surfaceItem(ldSettings).implicitHeight + 29 * s), ame: () => surfaceItem(ldSettings) },
-        keybinds:  { size: () => Qt.size(keybindsW, surfaceItem(ldKeybinds).implicitHeight + 29 * s), ame: () => surfaceItem(ldKeybinds) },
-        recorder:  { size: () => Qt.size(recorderW, surfaceItem(ldRecorder).implicitHeight + 33 * s), ame: () => surfaceItem(ldRecorder) },
-        sysmon:    { size: () => Qt.size(sysmonW, surfaceItem(ldSysmon).implicitHeight + 33 * s), ame: () => surfaceItem(ldSysmon) },
-        appearance: { size: () => Qt.size(appearanceW, surfaceItem(ldAppearance).implicitHeight + 29 * s), ame: () => surfaceItem(ldAppearance) },
-        updates:    { size: () => Qt.size(updatesW, surfaceItem(ldUpdates).implicitHeight + 29 * s), ame: () => surfaceItem(ldUpdates) },
-        display:    { size: () => Qt.size(displayW, surfaceItem(ldDisplay).implicitHeight + 29 * s), ame: () => surfaceItem(ldDisplay) },
-        input:      { size: () => Qt.size(inputW, surfaceItem(ldInput).implicitHeight + 29 * s), ame: () => surfaceItem(ldInput) },
-        look:       { size: () => Qt.size(lookW, surfaceItem(ldLook).implicitHeight + 29 * s), ame: () => surfaceItem(ldLook) },
-        idlelock:   { size: () => Qt.size(idlelockW, surfaceItem(ldIdlelock).implicitHeight + 29 * s), ame: () => surfaceItem(ldIdlelock) },
-        animation:  { size: () => Qt.size(animationW, surfaceItem(ldAnimation).implicitHeight + 29 * s), ame: () => surfaceItem(ldAnimation) },
-        fontpicker: { size: () => Qt.size(fontpickerW, surfaceItem(ldFontpicker).implicitHeight + 29 * s), ame: () => surfaceItem(ldFontpicker) }
+        mixer:     { size: () => Qt.size(93 * Math.max(4, surfaceItem(ldMixer).faderCount) * surfaceS, mixerH), ame: () => surfaceItem(ldMixer) },
+        link:      { size: () => { const it = surfaceItem(ldLink); return Qt.size(it.desiredW, it.implicitHeight + 26 * surfaceS); }, ame: () => surfaceItem(ldLink) },
+        wifi:      { size: () => Qt.size(wifiW, surfaceItem(ldWifi).implicitHeight + 26 * surfaceS), ame: () => surfaceItem(ldWifi) },
+        bt:        { size: () => Qt.size(btW, surfaceItem(ldBt).implicitHeight + 26 * surfaceS), ame: () => surfaceItem(ldBt) },
+        battery:   { size: () => Qt.size(batteryW, surfaceItem(ldBattery).implicitHeight + 26 * surfaceS), ame: () => surfaceItem(ldBattery) },
+        settings:  { size: () => Qt.size(settingsW, surfaceItem(ldSettings).implicitHeight + 29 * surfaceS), ame: () => surfaceItem(ldSettings) },
+        keybinds:  { size: () => Qt.size(keybindsW, surfaceItem(ldKeybinds).implicitHeight + 29 * surfaceS), ame: () => surfaceItem(ldKeybinds) },
+        recorder:  { size: () => Qt.size(recorderW, surfaceItem(ldRecorder).implicitHeight + 33 * surfaceS), ame: () => surfaceItem(ldRecorder) },
+        sysmon:    { size: () => Qt.size(sysmonW, surfaceItem(ldSysmon).implicitHeight + 33 * surfaceS), ame: () => surfaceItem(ldSysmon) },
+        appearance: { size: () => Qt.size(appearanceW, surfaceItem(ldAppearance).implicitHeight + 29 * surfaceS), ame: () => surfaceItem(ldAppearance) },
+        updates:    { size: () => Qt.size(updatesW, surfaceItem(ldUpdates).implicitHeight + 29 * surfaceS), ame: () => surfaceItem(ldUpdates) },
+        display:    { size: () => Qt.size(displayW, surfaceItem(ldDisplay).implicitHeight + 29 * surfaceS), ame: () => surfaceItem(ldDisplay) },
+        input:      { size: () => Qt.size(inputW, surfaceItem(ldInput).implicitHeight + 29 * surfaceS), ame: () => surfaceItem(ldInput) },
+        look:       { size: () => Qt.size(lookW, surfaceItem(ldLook).implicitHeight + 29 * surfaceS), ame: () => surfaceItem(ldLook) },
+        idlelock:   { size: () => Qt.size(idlelockW, surfaceItem(ldIdlelock).implicitHeight + 29 * surfaceS), ame: () => surfaceItem(ldIdlelock) },
+        animation:  { size: () => Qt.size(animationW, surfaceItem(ldAnimation).implicitHeight + 29 * surfaceS), ame: () => surfaceItem(ldAnimation) },
+        fontpicker: { size: () => Qt.size(fontpickerW, surfaceItem(ldFontpicker).implicitHeight + 29 * surfaceS), ame: () => surfaceItem(ldFontpicker) }
     })
 
     readonly property string mode: dragActive ? "dragOver"
@@ -1637,7 +1646,7 @@ Item {
         active: false
         anchors.fill: parent
         sourceComponent: Mixer {
-            s: pill.s
+            s: pill.surfaceS
             open: pill.mixerOpen
             morphCloseness: pill.morphCloseness
         }
@@ -1648,7 +1657,7 @@ Item {
         active: false
         anchors.fill: parent
         sourceComponent: Calendar {
-            s: pill.s
+            s: pill.surfaceS
             open: pill.calendarOpen
             morphCloseness: pill.morphCloseness
         }
@@ -1659,7 +1668,7 @@ Item {
         active: false
         anchors.fill: parent
         sourceComponent: Launcher {
-            s: pill.s
+            s: pill.surfaceS
             open: pill.launcherOpen
             morphCloseness: pill.morphCloseness
             onRequestClose: pill.requestClose()
@@ -1671,7 +1680,7 @@ Item {
         active: false
         anchors.fill: parent
         sourceComponent: Clipboard {
-            s: pill.s
+            s: pill.surfaceS
             open: pill.clipboardOpen
             morphCloseness: pill.morphCloseness
             onRequestClose: pill.requestClose()
@@ -1683,7 +1692,7 @@ Item {
         active: false
         anchors.fill: parent
         sourceComponent: Wallpaper {
-            s: pill.s
+            s: pill.surfaceS
             open: pill.wallpaperOpen
             morphCloseness: pill.morphCloseness
             onRequestClose: pill.requestClose()
@@ -1695,7 +1704,7 @@ Item {
         active: false
         anchors.fill: parent
         sourceComponent: Power {
-            s: pill.s
+            s: pill.surfaceS
             open: pill.powerOpen
             morphCloseness: pill.morphCloseness
             onRequestClose: pill.requestClose()
@@ -1707,7 +1716,7 @@ Item {
         active: false
         anchors.fill: parent
         sourceComponent: Media {
-            s: pill.s
+            s: pill.surfaceS
             open: pill.mediaOpen
             morphCloseness: pill.morphCloseness
             onRequestClose: pill.requestClose()
@@ -1719,7 +1728,7 @@ Item {
         active: false
         anchors.fill: parent
         sourceComponent: Link {
-            s: pill.s
+            s: pill.surfaceS
             open: pill.linkOpen
             morphCloseness: pill.morphCloseness
             onRequestClose: pill.requestClose()
@@ -1731,7 +1740,7 @@ Item {
         active: false
         anchors.fill: parent
         sourceComponent: WifiSurface {
-            s: pill.s
+            s: pill.surfaceS
             open: pill.wifiOpen
             morphCloseness: pill.morphCloseness
             onRequestClose: pill.requestClose()
@@ -1743,7 +1752,7 @@ Item {
         active: false
         anchors.fill: parent
         sourceComponent: BtSurface {
-            s: pill.s
+            s: pill.surfaceS
             open: pill.btOpen
             morphCloseness: pill.morphCloseness
             onRequestClose: pill.requestClose()
@@ -1755,7 +1764,7 @@ Item {
         active: false
         anchors.fill: parent
         sourceComponent: BatterySurface {
-            s: pill.s
+            s: pill.surfaceS
             open: pill.batteryOpen
             morphCloseness: pill.morphCloseness
             onRequestClose: pill.requestClose()
@@ -1767,7 +1776,7 @@ Item {
         active: false
         anchors.fill: parent
         sourceComponent: Settings {
-            s: pill.s
+            s: pill.surfaceS
             open: pill.settingsOpen
             morphCloseness: pill.morphCloseness
             onRequestClose: pill.requestClose()
@@ -1780,7 +1789,7 @@ Item {
         active: false
         anchors.fill: parent
         sourceComponent: Keybinds {
-            s: pill.s
+            s: pill.surfaceS
             open: pill.keybindsOpen
             morphCloseness: pill.morphCloseness
             onRequestClose: pill.requestClose()
@@ -1793,7 +1802,7 @@ Item {
         active: false
         anchors.fill: parent
         sourceComponent: Recorder {
-            s: pill.s
+            s: pill.surfaceS
             screenName: pill.screenName
             open: pill.recorderOpen
             morphCloseness: pill.morphCloseness
@@ -1806,7 +1815,7 @@ Item {
         active: false
         anchors.fill: parent
         sourceComponent: SysmonSurface {
-            s: pill.s
+            s: pill.surfaceS
             open: pill.sysmonOpen
             morphCloseness: pill.morphCloseness
             onRequestClose: pill.requestClose()
@@ -1818,7 +1827,7 @@ Item {
         active: false
         anchors.fill: parent
         sourceComponent: Appearance {
-            s: pill.s
+            s: pill.surfaceS
             open: pill.appearanceOpen
             morphCloseness: pill.morphCloseness
             onRequestClose: pill.requestClose()
@@ -1831,7 +1840,7 @@ Item {
         active: false
         anchors.fill: parent
         sourceComponent: Updates {
-            s: pill.s
+            s: pill.surfaceS
             open: pill.updatesOpen
             morphCloseness: pill.morphCloseness
             onRequestClose: pill.requestClose()
@@ -1844,7 +1853,7 @@ Item {
         active: false
         anchors.fill: parent
         sourceComponent: Display {
-            s: pill.s
+            s: pill.surfaceS
             open: pill.displayOpen
             morphCloseness: pill.morphCloseness
             onRequestClose: pill.requestClose()
@@ -1857,7 +1866,7 @@ Item {
         active: false
         anchors.fill: parent
         sourceComponent: Input {
-            s: pill.s
+            s: pill.surfaceS
             open: pill.inputOpen
             morphCloseness: pill.morphCloseness
             onRequestClose: pill.requestClose()
@@ -1870,7 +1879,7 @@ Item {
         active: false
         anchors.fill: parent
         sourceComponent: Look {
-            s: pill.s
+            s: pill.surfaceS
             open: pill.lookOpen
             morphCloseness: pill.morphCloseness
             onRequestClose: pill.requestClose()
@@ -1883,7 +1892,7 @@ Item {
         active: false
         anchors.fill: parent
         sourceComponent: IdleLock {
-            s: pill.s
+            s: pill.surfaceS
             open: pill.idlelockOpen
             morphCloseness: pill.morphCloseness
             onRequestClose: pill.requestClose()
@@ -1896,7 +1905,7 @@ Item {
         active: false
         anchors.fill: parent
         sourceComponent: AnimationSurface {
-            s: pill.s
+            s: pill.surfaceS
             open: pill.animationOpen
             morphCloseness: pill.morphCloseness
             onRequestClose: pill.requestClose()
@@ -1909,7 +1918,7 @@ Item {
         active: false
         anchors.fill: parent
         sourceComponent: FontPicker {
-            s: pill.s
+            s: pill.surfaceS
             open: pill.fontpickerOpen
             morphCloseness: pill.morphCloseness
             onRequestClose: pill.requestClose()
