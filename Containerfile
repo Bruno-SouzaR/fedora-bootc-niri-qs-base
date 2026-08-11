@@ -36,6 +36,7 @@ RUN dnf install -y \
     xdg-desktop-portal-gnome \
     bluez-tools \
     pipewire-pulseaudio \
+    playerctl \
     polkit-kde-agent-1 \
     fprintd-pam \
     swayidle \
