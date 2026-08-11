@@ -169,3 +169,7 @@ binds {
     Alt+Print { screenshot-window; }
     Ctrl+Print { screenshot-screen; }
 }
+
+// Perfil de entrada editado pela pill (Input). O niri observa este arquivo;
+// mudanças aplicam no reload. Inert place-holder em primeira inicialização.
+include optional=true "~/.config/niri/input.kdl"

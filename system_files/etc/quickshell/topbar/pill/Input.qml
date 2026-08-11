@@ -3,19 +3,18 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import "lib/setInput.js" as SetInput
 import "Singletons"
 
 /**
- * 操 INPUT sub-surface: edits the pointer, keyboard and cursor settings that live
- * in the Hyprland Lua modules, writing each change straight back to its source so
- * the choice survives a restart. Pointer and keyboard fields rewrite input.lua
- * and reload Hyprland; the layout row cycles a curated list of common layouts.
- * Cursor size and theme apply live through `hyprctl setcursor` with no reload,
- * and persist by rewriting the XCURSOR/HYPRCURSOR env lines and the autostart
- * setcursor call. The theme list is scanned from the installed icon themes that
- * carry a `cursors/` folder. Reached from the settings index; morphs back on the
- * back chevron.
+ * 操 INPUT sub-surface: edits the pointer, keyboard and cursor settings, writing
+ * the whole profile to `~/.config/niri/input.kdl` (a KDL snippet the niri config
+ * includes, so it survives a restart and is live-reloaded by niri's config
+ * watcher). Any pointer or keyboard pick regenerates the file wholesale and
+ * reloads niri as a belt-and-braces apply; the layout row cycles a curated list
+ * of common layouts. Cursor size and theme persist through the same file as the
+ * `cursor` block, with no separate live apply. The theme list is scanned from
+ * the installed icon themes that carry a `cursors/` folder. Reached from the
+ * settings index; morphs back on the back chevron.
  */
 SettingsSurface {
     id: root
@@ -31,20 +30,18 @@ SettingsSurface {
      */
     rows: [
         { item: sensRow, kind: "scrub", bump: function (d) { sensScrub.bump(d); } },
-        { item: accelRow, kind: "seg", vals: ["flat", "adaptive"], get: function () { return root.accelProfile; }, set: function (v) { root.accelProfile = v; root.writeInputField("accel_profile", "\"" + v + "\""); } },
+        { item: accelRow, kind: "seg", vals: ["flat", "adaptive"], get: function () { return root.accelProfile; }, set: function (v) { root.accelProfile = v; root.writeInput(); } },
         { item: layoutRow, kind: "seg", vals: root.kbLayoutVals, get: function () { return root.kbLayout; }, set: function (v) { root.setKbLayout(v); } },
         { item: rateRow, kind: "scrub", bump: function (d) { rateScrub.bump(d); } },
         { item: delayRow, kind: "scrub", bump: function (d) { delayScrub.bump(d); } },
-        { item: numlockRow, kind: "toggle", get: function () { return root.numlockOn; }, set: function (v) { root.numlockOn = v; root.writeInputField("numlock_by_default", v ? "true" : "false"); } },
+        { item: numlockRow, kind: "toggle", get: function () { return root.numlockOn; }, set: function (v) { root.numlockOn = v; root.writeInput(); } },
         { item: sizeRow, kind: "scrub", bump: function (d) { sizeScrub.bump(d); } },
         { item: themeRow, kind: "toggle", get: function () { return root.themeOpen; }, set: function (v) { root.themeOpen = v; } }
     ]
 
     property string note: ""
 
-    readonly property string inputPath: Quickshell.env("HOME") + "/.config/hypr/modules/input.lua"
-    readonly property string envPath: Quickshell.env("HOME") + "/.config/hypr/modules/env.lua"
-    readonly property string autostartPath: Quickshell.env("HOME") + "/.config/hypr/modules/autostart.lua"
+    readonly property string inputPath: Quickshell.env("HOME") + "/.config/niri/input.kdl"
 
     property real sensitivity: 0
     property string accelProfile: "flat"
@@ -57,10 +54,6 @@ SettingsSurface {
     property var cursorThemes: []
     property bool themeOpen: false
 
-    property string inputText: ""
-    property string envText: ""
-    property string autostartText: ""
-
     /** Per-field values captured on each open; the ScrubValue undo glyphs revert to these. */
     property var base: ({})
 
@@ -72,11 +65,22 @@ SettingsSurface {
     readonly property var kbLayouts: ["de", "us", "gb", "fr", "es", "it", "tr"]
     readonly property var kbLayoutVals: kbLayouts.indexOf(kbLayout) >= 0 ? kbLayouts : kbLayouts.concat([kbLayout])
 
+    /**
+     * Pulls the value after a `name` line out of the KDL snippet: a double-quoted
+     * string is returned unquoted, any bare run (number, keyword) is returned
+     * trimmed. Returns "" when the field is absent.
+     */
+    function kdlField(text, name) {
+        var re = new RegExp(name + "\\s+(?:\"([^\"]*)\"|([^\\s}]+))");
+        var m = re.exec(text);
+        if (!m)
+            return "";
+        return m[1] !== undefined ? m[1] : m[2];
+    }
+
     onActiveChanged: {
         if (active) {
             inputFile.reload();
-            envFile.reload();
-            autostartFile.reload();
             seed();
             themeProc.running = true;
         } else {
@@ -87,32 +91,28 @@ SettingsSurface {
     }
 
     /**
-     * Seeds every control from the live source files. Numbers fall back to the
-     * defaults when a field is missing so a partially hand-edited config never
-     * leaves a control blank.
+     * Seeds every control from the current input.kdl snippet. Numbers fall back
+     * to the defaults when a field is missing so a partially hand-edited config
+     * never leaves a control blank.
      */
     function seed() {
-        root.inputText = inputFile.text();
-        root.envText = envFile.text();
-        root.autostartText = autostartFile.text();
+        var k = inputFile.text();
 
-        var inp = root.inputText;
-        var sens = parseFloat(SetInput.getField(inp, "sensitivity"));
+        var sens = parseFloat(root.kdlField(k, "accel-speed"));
         root.sensitivity = isNaN(sens) ? 0 : sens;
-        var ap = SetInput.getField(inp, "accel_profile");
+        var ap = root.kdlField(k, "accel-profile");
         root.accelProfile = ap.length > 0 ? ap : "flat";
-        var kl = SetInput.getField(inp, "kb_layout");
+        var kl = root.kdlField(k, "layout");
         root.kbLayout = kl.length > 0 ? kl : "de";
-        var rr = parseInt(SetInput.getField(inp, "repeat_rate"), 10);
+        var rr = parseInt(root.kdlField(k, "repeat-rate"), 10);
         root.repeatRate = isNaN(rr) ? 25 : rr;
-        var rd = parseInt(SetInput.getField(inp, "repeat_delay"), 10);
+        var rd = parseInt(root.kdlField(k, "repeat-delay"), 10);
         root.repeatDelay = isNaN(rd) ? 600 : rd;
-        root.numlockOn = SetInput.getField(inp, "numlock_by_default") === "true";
+        root.numlockOn = root.kdlField(k, "numlock") === "true";
 
-        var env = root.envText;
-        var cs = parseInt(SetInput.getField(env, "XCURSOR_SIZE"), 10);
+        var cs = parseInt(root.kdlField(k, "xcursor-size"), 10);
         root.cursorSize = isNaN(cs) ? 24 : cs;
-        var ct = SetInput.getField(env, "XCURSOR_THEME");
+        var ct = root.kdlField(k, "xcursor-theme");
         root.cursorTheme = ct.length > 0 ? ct : "Bibata-Modern-Ice";
 
         root.base = {
@@ -123,52 +123,41 @@ SettingsSurface {
         };
     }
 
-    /**
-     * Rewrites one input.lua field to `literal` (already formatted by the caller)
-     * and reloads Hyprland so the change takes effect at once.
-     */
-    function writeInputField(name, literal) {
-        var res = SetInput.setField(root.inputText, name, literal);
-        if (!res.ok)
-            return;
-        root.inputText = res.text;
-        inputWriter.setText(res.text);
+    function buildConfig() {
+        var out = "// Gerado pela pill — edite pela surface Input.\n";
+        out += "input {\n";
+        out += "    mouse {\n";
+        out += "        accel-speed " + root.sensitivity + "\n";
+        out += "        accel-profile \"" + root.accelProfile + "\"\n";
+        out += "    }\n";
+        out += "    keyboard {\n";
+        out += "        repeat-delay " + root.repeatDelay + "\n";
+        out += "        repeat-rate " + root.repeatRate + "\n";
+        out += "        xkb { layout \"" + root.kbLayout + "\" }\n";
+        out += "        numlock " + (root.numlockOn ? "true" : "false") + "\n";
+        out += "    }\n";
+        out += "    touchpad {\n";
+        out += "        tap\n";
+        out += "        natural-scroll\n";
+        out += "    }\n";
+        out += "}\n";
+        out += "cursor {\n";
+        out += "    xcursor-theme \"" + root.cursorTheme + "\"\n";
+        out += "    xcursor-size " + root.cursorSize + "\n";
+        out += "}\n";
+        return out;
+    }
+
+    /** Regenerates the whole profile from the current properties and reloads
+     * niri (debounced) so the change lands at once. */
+    function writeInput() {
+        inputWriter.setText(buildConfig());
         reloadTimer.restart();
     }
 
     function setKbLayout(v) {
         root.kbLayout = v;
-        root.writeInputField("kb_layout", "\"" + v + "\"");
-    }
-
-    /**
-     * Applies a cursor theme/size pair live via `hyprctl setcursor`, then persists
-     * it by rewriting the XCURSOR/HYPRCURSOR env lines and the autostart setcursor
-     * call. No Hyprland reload is needed for the cursor.
-     */
-    function applyCursor(theme, size) {
-        setcursorProc.theme = theme;
-        setcursorProc.size = size;
-        setcursorProc.running = true;
-
-        var env = root.envText;
-        var e1 = SetInput.setEnv(env, "XCURSOR_THEME", theme);
-        var e2 = SetInput.setEnv(e1.ok ? e1.text : env, "XCURSOR_SIZE", String(size));
-        var e3 = SetInput.setEnv(e2.ok ? e2.text : (e1.ok ? e1.text : env), "HYPRCURSOR_SIZE", String(size));
-        if (e3.ok || e2.ok || e1.ok) {
-            root.envText = e3.ok ? e3.text : (e2.ok ? e2.text : e1.text);
-            envWriter.setText(root.envText);
-        }
-
-        var auto = SetInput.setCursorLine(root.autostartText, theme, size);
-        if (auto.ok) {
-            root.autostartText = auto.text;
-            autostartWriter.setText(auto.text);
-        }
-    }
-
-    function clampSensitivity(v) {
-        return Math.max(-1, Math.min(1, Math.round(v * 10) / 10));
+        root.writeInput();
     }
 
     FileView {
@@ -185,38 +174,11 @@ SettingsSurface {
         printErrors: false
     }
 
-    FileView {
-        id: envFile
-        path: root.envPath
-        blockLoading: true
-        printErrors: false
-    }
-
-    FileView {
-        id: envWriter
-        path: root.envPath
-        atomicWrites: true
-        printErrors: false
-    }
-
-    FileView {
-        id: autostartFile
-        path: root.autostartPath
-        blockLoading: true
-        printErrors: false
-    }
-
-    FileView {
-        id: autostartWriter
-        path: root.autostartPath
-        atomicWrites: true
-        printErrors: false
-    }
-
     /**
      * Reload is debounced so a scrub drag writes the file per step but reloads
-     * Hyprland once, and captured so a failed reload surfaces as the inline note
-     * instead of vanishing with a detached process.
+     * niri once, and captured so a failed reload surfaces as the inline note
+     * instead of vanishing with a detached process. niri's config watcher is
+     * live-reloading the included snippet on save; this is belt-and-braces.
      */
     Timer {
         id: reloadTimer
@@ -227,17 +189,10 @@ SettingsSurface {
 
     Process {
         id: reloadProc
-        command: ["sh", "-c", "sleep 0.3; hyprctl reload"]
+        command: ["niri", "msg", "action", "load-config-file", "--path", "/etc/niri/config.kdl"]
         onExited: function (exitCode) {
-            root.note = exitCode === 0 ? "" : "Hyprland reload failed. The change is saved but not applied.";
+            root.note = exitCode === 0 ? "" : "niri reload failed. The change is saved but not applied.";
         }
-    }
-
-    Process {
-        id: setcursorProc
-        property string theme: ""
-        property int size: 24
-        command: ["hyprctl", "setcursor", theme, String(size)]
     }
 
     Process {
@@ -392,7 +347,7 @@ SettingsSurface {
                     from: -1; to: 1; step: 0.1; decimals: 1
                     onEdited: v => {
                         root.sensitivity = v;
-                        root.writeInputField("sensitivity", String(v));
+                        root.writeInput();
                     }
                 }
             }
@@ -408,7 +363,7 @@ SettingsSurface {
                     value: root.accelProfile
                     onPicked: (v) => {
                         root.accelProfile = v;
-                        root.writeInputField("accel_profile", "\"" + v + "\"");
+                        root.writeInput();
                     }
                 }
             }
@@ -454,7 +409,7 @@ SettingsSurface {
                     from: 10; to: 80; step: 1; unit: "Hz"
                     onEdited: v => {
                         root.repeatRate = v;
-                        root.writeInputField("repeat_rate", String(v));
+                        root.writeInput();
                     }
                 }
             }
@@ -472,7 +427,7 @@ SettingsSurface {
                     from: 150; to: 1000; step: 25; unit: "ms"
                     onEdited: v => {
                         root.repeatDelay = v;
-                        root.writeInputField("repeat_delay", String(v));
+                        root.writeInput();
                     }
                 }
             }
@@ -487,7 +442,7 @@ SettingsSurface {
                     on: root.numlockOn
                     onToggled: {
                         root.numlockOn = !root.numlockOn;
-                        root.writeInputField("numlock_by_default", root.numlockOn ? "true" : "false");
+                        root.writeInput();
                     }
                 }
             }
@@ -507,7 +462,7 @@ SettingsSurface {
                     from: 12; to: 96; step: 4; unit: "px"
                     onEdited: v => {
                         root.cursorSize = v;
-                        root.applyCursor(root.cursorTheme, v);
+                        root.writeInput();
                     }
                 }
             }
@@ -544,7 +499,7 @@ SettingsSurface {
                     onPicked: (v) => {
                         root.cursorTheme = v;
                         root.themeOpen = false;
-                        root.applyCursor(v, root.cursorSize);
+                        root.writeInput();
                     }
                 }
             }
