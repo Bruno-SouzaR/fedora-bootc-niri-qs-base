@@ -13,8 +13,15 @@ function eq(actual, expected, msg) {
 // factory presets
 const f = P.factoryPresets();
 eq(f.length, 3, "three factory presets");
-eq(f[0].factory, true, "factory flag set");
+eq(f[0].factory, true, "warm factory flag set");
 eq(f[0].id, "warm", "first preset id warm");
+eq(f[1].factory, true, "cool factory flag set");
+eq(f[1].id, "cool", "second preset id cool");
+eq(f[2].factory, true, "mono factory flag set");
+eq(f[2].id, "mono", "third preset id mono");
+eq(P.validate(f[0].roles), true, "warm roles valid");
+eq(P.validate(f[1].roles), true, "cool roles valid");
+eq(P.validate(f[2].roles), true, "mono roles valid");
 
 // validate
 eq(P.validate(null), false, "null roles invalid");

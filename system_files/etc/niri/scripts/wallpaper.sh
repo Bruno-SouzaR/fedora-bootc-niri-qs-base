@@ -104,7 +104,7 @@ focused_output() {
 # The palette follows the focused monitor: whatever hangs there drives matugen,
 # the global state file and the global still.
 palette_update() {
-    local pmode focused pic mh md
+    local focused pic
     focused=$(focused_output)
     pic=""
     [ -n "$focused" ] && pic=$(map_get "$focused")
@@ -112,15 +112,8 @@ palette_update() {
     [ -n "$pic" ] && [ -f "$pic" ] || return 0
     mkdir -p "$(dirname "$STATE")"
     printf '%s\n' "$pic" > "$STATE"
-    pmode=$(jq -r '.paletteMode // "static"' "$flags_file" 2>/dev/null || echo static)
     mkdir -p "$(dirname "$WLOG")"
-    if [ "$pmode" = "manual" ]; then
-        mh=$(jq -r '.manualHue // 30' "$flags_file" 2>/dev/null || echo 30)
-        md=$(jq -r 'if .manualDark == false then "light" else "dark" end' "$flags_file" 2>/dev/null || echo dark)
-        python3 "$(dirname "$0")/wallcolors.py" --hue "$mh" "$md" >>"$WLOG" 2>&1 || true
-    else
-        python3 "$(dirname "$0")/wallcolors.py" "$pic" >>"$WLOG" 2>&1 || true
-    fi
+    python3 "$(dirname "$0")/wallcolors.py" "$pic" >>"$WLOG" 2>&1 || true
     niri msg action load-config-file --path /etc/niri/config.kdl >/dev/null 2>&1 || true
     busctl --user call com.mitchellh.ghostty /com/mitchellh/ghostty org.gtk.Actions \
         Activate "sava{sv}" reload-config 0 0 >/dev/null 2>&1 || true

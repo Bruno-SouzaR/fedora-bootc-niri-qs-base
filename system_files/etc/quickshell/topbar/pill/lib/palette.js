@@ -51,15 +51,6 @@ function lighten(hex, f) {
     if (!c) return hex;
     return hslToHex(c.h, c.s, c.l + (1 - c.l) * clamp01(f));
 }
-function alphaMixin(hex, f) {
-    var c = hexToHsl(hex);
-    if (!c) return hex + "ff";
-    // mix toward white by f, keep result as #rrggbbaa with alpha = round(255*(1-f))
-    var r = Math.round(clamp01(c.l) * 255);
-    var a = Math.round((1 - clamp01(f)) * 255);
-    return "#" + [r, r, r].map(function (x) { return ("0" + x.toString(16)).slice(-2); }).join("") +
-        ("0" + a.toString(16)).slice(-2);
-}
 
 function validate(roles) {
     if (!roles || typeof roles !== "object") return false;
@@ -137,4 +128,4 @@ function derive(roles) {
 
 function onGlow(o) { return o && o.onGlow ? o.onGlow : "#ff9a64"; }
 
-module.exports = { ROLES, factoryPresets, derive, validate, hexToHsl, hslToHex, darken, lighten, alphaMixin };
+module.exports = { ROLES, factoryPresets, derive, validate, hexToHsl, hslToHex, darken, lighten };
