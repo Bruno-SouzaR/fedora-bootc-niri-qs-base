@@ -83,6 +83,32 @@ SettingsSurface {
         setRole(role, Palette.hslToHex(h, s, hsl.l));
     }
 
+    /** Saturation of a role 0..1, for the SV box thumb x. */
+    function roleSat(role) {
+        var hsl = Palette.hexToHsl(Flags.manualRoles[role]);
+        return hsl ? hsl.s : 0;
+    }
+
+    /** Lightness of a role 0..1, for the SV box thumb y (inverted). */
+    function roleLight(role) {
+        var hsl = Palette.hexToHsl(Flags.manualRoles[role]);
+        return hsl ? hsl.l : 0;
+    }
+
+    /**
+     * Drag on a role's saturation/lightness square: keep its hue, set
+     * saturation from x and lightness from y (top = light). This is how a user
+     * reaches whites, blacks and dark desaturated tones like #214C42.
+     */
+    function pickRoleSV(role, mx, my, width, height) {
+        var hsl = Palette.hexToHsl(Flags.manualRoles[role]);
+        if (!hsl)
+            return;
+        var s = Math.max(0, Math.min(1, mx / width));
+        var l = Math.max(0, Math.min(1, 1 - my / height));
+        setRole(role, Palette.hslToHex(hsl.h, s, l));
+    }
+
     /** Commit a typed hex on a role, ignoring anything that isn't #rrggbb. */
     function commitRole(role, raw) {
         var clean = String(raw).trim();
@@ -598,7 +624,7 @@ SettingsSurface {
 
             Item {
                 width: 104 * root.s
-                height: 36 * root.s
+                height: 90 * root.s
 
                 Rectangle {
                     id: roleSwatch
@@ -681,6 +707,64 @@ SettingsSurface {
                         function setHue(mx) { root.pickRoleHue(modelData.role, mx, roleHueStrip.width); }
                         onPressed: (m) => setHue(m.x)
                         onPositionChanged: (m) => setHue(m.x)
+                    }
+                }
+
+                /**
+                 * Saturation/lightness square for the current hue: drag across
+                 * it to move saturation (x) and lightness (y, top = light). This
+                 * is what reaches whites, blacks and dark desaturated greens.
+                 * The background blends white -> pure hue horizontally, then
+                 * fades to black vertically via a second overlay layer.
+                 */
+                Rectangle {
+                    id: roleSv
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: roleHueStrip.bottom
+                    anchors.topMargin: 5 * root.s
+                    height: 34 * root.s
+                    radius: 6 * root.s
+                    clip: true
+
+                    Rectangle {
+                        id: roleSvHue
+                        anchors.fill: parent
+                        gradient: Gradient {
+                            orientation: Gradient.Horizontal
+                            GradientStop { position: 0.0; color: "#ffffff" }
+                            GradientStop { position: 1.0; color: Qt.hsla(root.roleHue(modelData.role) / 359, 1.0, 0.5, 1) }
+                        }
+                    }
+
+                    Rectangle {
+                        id: roleSvShade
+                        anchors.fill: parent
+                        gradient: Gradient {
+                            orientation: Gradient.Vertical
+                            GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0) }
+                            GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 1) }
+                        }
+                    }
+
+                    Rectangle {
+                        id: roleSvThumb
+                        width: 12 * root.s
+                        height: 12 * root.s
+                        radius: width / 2
+                        x: root.roleSat(modelData.role) * (roleSv.width - width)
+                        y: (1 - root.roleLight(modelData.role)) * (roleSv.height - height)
+                        color: Flags.manualRoles[modelData.role]
+                        border.width: 2 * root.s
+                        border.color: Theme.cream
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.CrossCursor
+                        function setSv(mx, my) { root.pickRoleSV(modelData.role, mx, my, roleSv.width, roleSv.height); }
+                        onPressed: (m) => setSv(m.x, m.y)
+                        onPositionChanged: (m) => setSv(m.x, m.y)
                     }
                 }
             }
