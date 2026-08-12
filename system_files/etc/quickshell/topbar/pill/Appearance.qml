@@ -254,7 +254,17 @@ SettingsSurface {
         Item {
             id: presetsSection
             width: parent.width
-            height: Flags.paletteMode === "presets" ? presetsCol.implicitHeight : 0
+            /**
+             * The Colores section's open height, computed from known parts
+             * rather than an inner Column's implicitHeight: QML does not
+             * re-evaluate a Column's implicitHeight when a child's size changes
+             * after first layout, and Presets.list populates asynchronously
+             * from disk, so the submenu would stay collapsed at just the header.
+             * Sum the header, the (reactive) scroll area and the margins here.
+             */
+            height: Flags.paletteMode === "presets"
+                ? (presetsScroll.height + 4 * root.s /* header font */ + 24 * root.s /* top/bottom pads */)
+                : 0
             clip: true
             Behavior on height { NumberAnimation { duration: Motion.standard; easing.type: Motion.easeStandard } }
 
@@ -265,9 +275,6 @@ SettingsSurface {
                 anchors.right: parent.right
                 anchors.leftMargin: 12 * root.s
                 anchors.rightMargin: 12 * root.s
-                topPadding: 4 * root.s
-                bottomPadding: 16 * root.s
-                spacing: 10 * root.s
 
                 Text {
                     text: "Colour presets"
@@ -278,89 +285,80 @@ SettingsSurface {
                     font.letterSpacing: 1 * root.s
                 }
 
-                ListView {
-                    id: presetsList
-                    width: presetsCol.width
-                    orientation: Qt.Horizontal
-                    spacing: 8 * root.s
-                    implicitHeight: 64 * root.s
-                    clip: true
-                    boundsBehavior: Flickable.StopAtBounds
-                    model: Presets.list
+                Item {
+                    id: presetsScroll
+                    width: parent.width
+                    height: Math.min(presetsList.count * 36 * root.s, 4 * 36 * root.s)
+                    implicitHeight: height
 
-                    delegate: Item {
-                        id: presetTile
-                        required property var modelData
-                        width: 88 * root.s
-                        height: 64 * root.s
+                    ListView {
+                        id: presetsList
+                        anchors.fill: parent
+                        clip: true
+                        spacing: 2 * root.s
+                        boundsBehavior: Flickable.StopAtBounds
+                        model: Presets.list
 
-                        Rectangle {
-                            anchors.fill: parent
-                            radius: 10 * root.s
-                            color: Presets.activeId === presetTile.modelData.id
-                                ? Qt.alpha(Theme.vermLit, 0.16) : (tileArea.containsMouse ? Theme.frameBg : "transparent")
-                            Behavior on color { ColorAnimation { duration: Motion.fast } }
-                            border.width: Presets.activeId === presetTile.modelData.id ? 1 : 0
-                            border.color: Theme.vermLit
+                        delegate: Item {
+                            id: presetRow
+                            required property var modelData
+                            width: ListView.view.width
+                            height: 34 * root.s
 
-                            Column {
-                                anchors.centerIn: parent
-                                spacing: 6 * root.s
+                            readonly property bool selected: Presets.activeId === presetRow.modelData.id
 
-                                Rectangle {
-                                    width: 26 * root.s; height: 26 * root.s; radius: 7 * root.s
-                                    color: presetTile.modelData.roles.accent
-                                    border.width: 1; border.color: Theme.border
-                                }
-                                Text {
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    text: presetTile.modelData.name
-                                    color: Theme.cream
-                                    font.family: Theme.font
-                                    font.pixelSize: 10.5 * root.s
-                                    elide: Text.ElideRight
-                                    width: 76 * root.s
-                                }
+                            Rectangle {
+                                anchors.fill: parent
+                                anchors.topMargin: 2 * root.s
+                                anchors.bottomMargin: 2 * root.s
+                                radius: 8 * root.s
+                                color: presetRow.selected
+                                    ? Qt.alpha(Theme.vermLit, 0.14)
+                                    : (rowArea.containsMouse ? Theme.frameBg : "transparent")
+                                Behavior on color { ColorAnimation { duration: Motion.fast } }
                             }
 
                             MouseArea {
-                                id: tileArea
+                                id: rowArea
                                 anchors.fill: parent
                                 hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
-                                onClicked: Presets.select(presetTile.modelData.id)
+                                onClicked: Presets.select(presetRow.modelData.id)
+                            }
+
+                            Text {
+                                anchors.left: parent.left
+                                anchors.leftMargin: 12 * root.s
+                                anchors.right: tick.left
+                                anchors.rightMargin: 10 * root.s
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: presetRow.modelData.name
+                                color: presetRow.selected ? Theme.vermLit : Theme.cream
+                                font.family: Theme.font
+                                font.pixelSize: 13 * root.s
+                                font.weight: presetRow.selected ? Font.DemiBold : Font.Medium
+                                elide: Text.ElideRight
+                            }
+
+                            Rectangle {
+                                id: tick
+                                anchors.right: parent.right
+                                anchors.rightMargin: 14 * root.s
+                                anchors.verticalCenter: parent.verticalCenter
+                                visible: presetRow.selected
+                                width: 6 * root.s
+                                height: 6 * root.s
+                                radius: width / 2
+                                color: Theme.vermLit
                             }
                         }
                     }
-                }
-            }
 
-            /**
-             * Wheel bridge for the preset strip, a sibling of the presets
-             * column so the column's implicitHeight is not collapsed (QML
-             * forbids anchors.fill on a direct Column child, which zeroed
-             * presetsCol's implicitHeight and kept the submenu closed). Stays
-             * pinned over the strip to translate wheel notches into
-             * horizontal contentX steps.
-             */
-            MouseArea {
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.top: parent.top
-                anchors.topMargin: 21 * root.s
-                height: 64 * root.s
-                acceptedButtons: Qt.NoButton
-                cursorShape: Qt.PointingHandCursor
-                property real acc: 0
-                onWheel: (event) => {
-                    acc += event.angleDelta.y / 120;
-                    const notches = Math.trunc(acc);
-                    if (notches !== 0) {
-                        const max = Math.max(0, presetsList.contentWidth - presetsList.width);
-                        presetsList.contentX = Math.max(0, Math.min(max, presetsList.contentX + notches * 48 * root.s));
-                        acc -= notches;
+                    WheelScroller {
+                        anchors.fill: parent
+                        s: root.s
+                        flick: presetsList
                     }
-                    event.accepted = true;
                 }
             }
         }
