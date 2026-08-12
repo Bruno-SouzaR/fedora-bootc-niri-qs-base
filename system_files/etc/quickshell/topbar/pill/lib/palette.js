@@ -128,4 +128,6 @@ function derive(roles) {
 
 function onGlow(o) { return o && o.onGlow ? o.onGlow : "#ff9a64"; }
 
-module.exports = { ROLES, factoryPresets, derive, validate, hexToHsl, hslToHex, darken, lighten };
+if (typeof module !== "undefined" && module.exports) {
+    module.exports = { ROLES, factoryPresets, derive, validate, hexToHsl, hslToHex, darken, lighten };
+}
