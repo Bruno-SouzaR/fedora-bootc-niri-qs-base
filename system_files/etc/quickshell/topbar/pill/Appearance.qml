@@ -355,9 +355,11 @@ SettingsSurface {
 
         /**
          * Manual eight-role editor, folded shut unless the palette is on Manual.
-         * Each colour role is a row pairing a swatch + hex field with a draggable
-         * hue strip; the tone row is a Dark/Light choice; a name field and a Save
-         * row append the working colours to the preset list.
+         * The seven colour roles live in a vertically scrollable list showing
+         * about three at a time, so the editor never grows past the screen; the
+         * tone choice, the preset name and the Save row stay pinned below the
+         * scrolling roles. Each role row pairs a swatch + hex field with a
+         * draggable hue strip and a saturation/lightness square.
          */
         Item {
             id: manualSection
@@ -386,9 +388,27 @@ SettingsSurface {
                     font.letterSpacing: 1 * root.s
                 }
 
-                Repeater {
-                    model: root.roleRows
-                    delegate: roleEditor
+                Item {
+                    id: rolesScroll
+                    width: parent.width
+                    height: Math.min(rolesList.contentHeight, 3 * 102 * root.s)
+                    implicitHeight: height
+
+                    ListView {
+                        id: rolesList
+                        anchors.fill: parent
+                        clip: true
+                        spacing: 4 * root.s
+                        boundsBehavior: Flickable.StopAtBounds
+                        model: root.roleRows
+                        delegate: roleEditor
+                    }
+
+                    WheelScroller {
+                        anchors.fill: parent
+                        s: root.s
+                        flick: rolesList
+                    }
                 }
 
                 SettingsRow {
