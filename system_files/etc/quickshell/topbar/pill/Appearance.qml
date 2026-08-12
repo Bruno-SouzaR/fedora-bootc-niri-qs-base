@@ -34,6 +34,18 @@ SettingsSurface {
         return ("#" + h(c.r) + h(c.g) + h(c.b)).toUpperCase();
     }
 
+    /** Per-field values captured on each open; the ScrubValue undo glyphs revert to these. */
+    property var base: ({})
+
+    onActiveChanged: {
+        if (active) {
+            root.base = { topGap: Flags.topGap, appGap: Flags.appGap, pillOpacity: Flags.pillOpacity };
+        } else {
+            focusRowItem = null;
+            kbIndex = -1;
+        }
+    }
+
     function applyManual() {
         hueArg = String(Math.round(Flags.manualHue));
         modeArg = Flags.manualDark ? "dark" : "light";
@@ -90,6 +102,10 @@ SettingsSurface {
         { item: randomRow, kind: "seg", vals: ["all", "cursor"], get: function () { return Flags.randomScope; }, set: function (v) { Flags.randomScope = v; } },
         { item: scaleRow, kind: "seg", vals: [0.9, 1.0, 1.1, 1.25], get: function () { return Flags.uiScale; }, set: function (v) { Flags.uiScale = v; } },
         { item: motionRow, kind: "toggle", get: function () { return Flags.reduceMotion; }, set: function (v) { Flags.reduceMotion = v; } },
+        { item: hideRow, kind: "seg", vals: ["smart", "auto"], get: function () { return Flags.hideMode; }, set: function (v) { Flags.hideMode = v; } },
+        { item: gapRow, kind: "scrub", bump: function (d) { gapScrub.bump(d); } },
+        { item: appGapRow, kind: "scrub", bump: function (d) { appGapScrub.bump(d); } },
+        { item: opRow, kind: "scrub", bump: function (d) { opScrub.bump(d); } },
         { item: fontRow, kind: "nav", surface: "fontpicker" }
     ]
 
@@ -409,6 +425,68 @@ SettingsSurface {
                 s: root.s
                 on: Flags.reduceMotion
                 onToggled: Flags.reduceMotion = !Flags.reduceMotion
+            }
+        }
+
+        SettingsRow {
+            id: hideRow
+            surface: root
+            name: "Hide mode"
+            icon: "layers"
+
+            SettingsSeg {
+                s: root.s
+                options: [{ label: "Smart", value: "smart" }, { label: "Auto", value: "auto" }]
+                value: Flags.hideMode
+                onPicked: (v) => Flags.hideMode = v
+            }
+        }
+
+        SettingsRow {
+            id: gapRow
+            surface: root
+            name: "Pill gap"
+            icon: "waves"
+
+            ScrubValue {
+                id: gapScrub
+                s: root.s
+                value: Flags.topGap
+                openValue: root.base.topGap
+                from: 0; to: 2; step: 0.1; decimals: 1
+                onEdited: (v) => Flags.topGap = v
+            }
+        }
+
+        SettingsRow {
+            id: appGapRow
+            surface: root
+            name: "App gap"
+            icon: "monitor"
+
+            ScrubValue {
+                id: appGapScrub
+                s: root.s
+                value: Flags.appGap
+                openValue: root.base.appGap
+                from: 0; to: 2; step: 0.1; decimals: 1
+                onEdited: (v) => Flags.appGap = v
+            }
+        }
+
+        SettingsRow {
+            id: opRow
+            surface: root
+            name: "Pill opacity"
+            icon: "droplet"
+
+            ScrubValue {
+                id: opScrub
+                s: root.s
+                value: Flags.pillOpacity
+                openValue: root.base.pillOpacity
+                from: 0.55; to: 1.0; step: 0.05; decimals: 2
+                onEdited: (v) => Flags.pillOpacity = v
             }
         }
 
