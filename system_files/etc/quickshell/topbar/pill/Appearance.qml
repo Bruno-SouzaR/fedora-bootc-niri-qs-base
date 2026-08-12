@@ -223,7 +223,7 @@ SettingsSurface {
         /**
          * Presets strip, folded shut unless the palette is on Presets. A
          * horizontal list of swatch tiles, one per saved/stock palette, with the
-         * active one lit; a WheelScroller flicks it sideways.
+         * active one lit; a button-less wheel bridge flicks it sideways.
          */
         Item {
             id: presetsSection
@@ -254,6 +254,7 @@ SettingsSurface {
 
                 ListView {
                     id: presetsList
+                    width: presetsCol.width
                     orientation: Qt.Horizontal
                     spacing: 8 * root.s
                     implicitHeight: 64 * root.s
@@ -307,10 +308,21 @@ SettingsSurface {
                     }
                 }
 
-                WheelScroller {
+                MouseArea {
                     anchors.fill: presetsList
-                    s: root.s
-                    flick: presetsList
+                    acceptedButtons: Qt.NoButton
+                    cursorShape: Qt.PointingHandCursor
+                    property real acc: 0
+                    onWheel: (event) => {
+                        acc += event.angleDelta.y / 120;
+                        const notches = Math.trunc(acc);
+                        if (notches !== 0) {
+                            const max = Math.max(0, presetsList.contentWidth - presetsList.width);
+                            presetsList.contentX = Math.max(0, Math.min(max, presetsList.contentX + notches * 48 * root.s));
+                            acc -= notches;
+                        }
+                        event.accepted = true;
+                    }
                 }
             }
         }
