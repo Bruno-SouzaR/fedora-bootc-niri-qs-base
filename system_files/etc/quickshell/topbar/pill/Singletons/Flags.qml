@@ -81,7 +81,7 @@ Singleton {
             property bool showGlyphs: true
             property string paletteMode: "presets"
             /** 8-role object the Manual editor edits live; defaults to the Warm preset roles. */
-            property var manualRoles: { background: "#221813", surface: "#2e231b", accent: "#e0563b", dotInactive: "#e6d6cb", text: "#e6d6cb", textSoft: "#8a7d74", border: "#3a2a22", tone: "dark" }
+            property var manualRoles: ({ background: "#221813", surface: "#2e231b", accent: "#e0563b", dotInactive: "#e6d6cb", text: "#e6d6cb", textSoft: "#8a7d74", border: "#3a2a22", tone: "dark" })
             /** Pending "Save preset" name filled by the Manual editor. */
             property string presetName: ""
             /** Explicit wallpaper folder override. Empty means autodetect: the dir wallpaper.sh last resolved (ricelin-wallpaper-dir state file), then ~/Ricelin/wallpapers. Lives in user state so an in-app update never clobbers a custom folder. */

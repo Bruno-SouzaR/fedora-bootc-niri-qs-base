@@ -1,7 +1,7 @@
 pragma Singleton
 import QtQuick
 import Quickshell
-import "lib/palette.js" as Palette
+import "../lib/palette.js" as Palette
 
 /**
  * Pill palette. Two sources: the curated washi/flame hex below is the identity

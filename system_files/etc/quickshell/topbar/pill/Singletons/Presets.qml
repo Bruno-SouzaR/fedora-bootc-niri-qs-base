@@ -3,7 +3,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import "lib/palette.js" as Palette
+import "../lib/palette.js" as Palette
 
 /**
  * Persisted colour presets. Seeds the three factory presets the first time the
