@@ -333,22 +333,34 @@ SettingsSurface {
                         }
                     }
                 }
+            }
 
-                MouseArea {
-                    anchors.fill: presetsList
-                    acceptedButtons: Qt.NoButton
-                    cursorShape: Qt.PointingHandCursor
-                    property real acc: 0
-                    onWheel: (event) => {
-                        acc += event.angleDelta.y / 120;
-                        const notches = Math.trunc(acc);
-                        if (notches !== 0) {
-                            const max = Math.max(0, presetsList.contentWidth - presetsList.width);
-                            presetsList.contentX = Math.max(0, Math.min(max, presetsList.contentX + notches * 48 * root.s));
-                            acc -= notches;
-                        }
-                        event.accepted = true;
+            /**
+             * Wheel bridge for the preset strip, a sibling of the presets
+             * column so the column's implicitHeight is not collapsed (QML
+             * forbids anchors.fill on a direct Column child, which zeroed
+             * presetsCol's implicitHeight and kept the submenu closed). Stays
+             * pinned over the strip to translate wheel notches into
+             * horizontal contentX steps.
+             */
+            MouseArea {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.topMargin: 21 * root.s
+                height: 64 * root.s
+                acceptedButtons: Qt.NoButton
+                cursorShape: Qt.PointingHandCursor
+                property real acc: 0
+                onWheel: (event) => {
+                    acc += event.angleDelta.y / 120;
+                    const notches = Math.trunc(acc);
+                    if (notches !== 0) {
+                        const max = Math.max(0, presetsList.contentWidth - presetsList.width);
+                        presetsList.contentX = Math.max(0, Math.min(max, presetsList.contentX + notches * 48 * root.s));
+                        acc -= notches;
                     }
+                    event.accepted = true;
                 }
             }
         }
