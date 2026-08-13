@@ -39,12 +39,19 @@ SettingsSurface {
         { role: "border", label: "Border" }
     ]
 
+    /** Whether the Presets strip is expanded. Collapsed on every open, and
+     *  toggled open/closed by selecting the "Presets" palette option, so the
+     *  theme list never spills out until the user asks for it. */
+    property bool presetsOpen: false
+
     onActiveChanged: {
         if (active) {
             root.base = { topGap: Flags.topGap, appGap: Flags.appGap, pillOpacity: Flags.pillOpacity };
+            root.presetsOpen = false;
         } else {
             focusRowItem = null;
             kbIndex = -1;
+            root.presetsOpen = false;
         }
     }
 
@@ -131,6 +138,10 @@ SettingsSurface {
     }
 
     function applyMode(v) {
+        if (v === "presets")
+            root.presetsOpen = !root.presetsOpen;
+        else
+            root.presetsOpen = false;
         Flags.paletteMode = v;
         if (v === "manual") {
             var base = Presets.active ? Presets.active.roles : null;
@@ -247,7 +258,8 @@ SettingsSurface {
         }
 
         /**
-         * Presets strip, folded shut unless the palette is on Presets. A
+         * Presets strip, folded shut unless the palette is on Presets AND the
+         * "Presets" option was clicked to expand it (see presetsOpen). A
          * horizontal list of swatch tiles, one per saved/stock palette, with the
          * active one lit; a button-less wheel bridge flicks it sideways.
          */
@@ -262,7 +274,7 @@ SettingsSurface {
              * from disk, so the submenu would stay collapsed at just the header.
              * Sum the header, the (reactive) scroll area and the margins here.
              */
-            height: Flags.paletteMode === "presets"
+            height: (Flags.paletteMode === "presets" && root.presetsOpen)
                 ? (presetsScroll.height + 4 * root.s /* header font */ + 24 * root.s /* top/bottom pads */)
                 : 0
             clip: true

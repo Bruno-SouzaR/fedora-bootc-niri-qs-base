@@ -149,14 +149,22 @@ ShellRoot {
             readonly property bool collapsed: root.openMon !== modelData.name && root.peekMon !== modelData.name
                 && (Flags.autoHide || (Flags.smartHide && Niri.fullscreenByMonitor[modelData.name] === true))
 
+            /**
+             * Claim no exclusive zone until Flags has finished loading, so the
+             * window never maps with the unloaded "smart" default. Otherwise a
+             * reboot in auto-hide would leave a stale reserved band the pill has
+             * already visually retracted from.
+             */
+            readonly property bool zoneActive: Flags.ready && !(Flags.autoHide || collapsed)
+
             screen: modelData
             color: "transparent"
             exclusionMode: ExclusionMode.Normal
-            exclusiveZone: (Flags.autoHide || collapsed) ? 0 : reservedH
+            exclusiveZone: zoneActive ? reservedH : 0
             aboveWindows: true
 
             anchors { top: true; left: true; right: true }
-            implicitHeight: collapsed ? 0 : reservedH
+            implicitHeight: (Flags.ready && !collapsed) ? reservedH : 0
 
             mask: emptyReserve
             Region { id: emptyReserve }

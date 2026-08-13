@@ -13,6 +13,15 @@ import Quickshell.Io
 Singleton {
     id: root
 
+    /**
+     * True once the persisted flags file has been read (or written on first
+     * boot). The layer-shell reserve window keys its exclusive zone off this so
+     * it never claims space with the unloaded "smart" default before the real
+     * hideMode is known, which would leave a stale reserved band after a reboot
+     * in auto-hide mode.
+     */
+    property bool ready: false
+
     property alias dnd: adapter.dnd
     property alias keepAwake: adapter.keepAwake
     property alias time12h: adapter.time12h
@@ -66,7 +75,8 @@ Singleton {
         printErrors: false
 
         onFileChanged: reload()
-        onAdapterUpdated: writeAdapter()
+        onLoaded: root.ready = true
+        onAdapterUpdated: { root.ready = true; writeAdapter(); }
         onLoadFailed: function(error) {
             if (error === FileViewError.FileNotFound)
                 writeAdapter();
